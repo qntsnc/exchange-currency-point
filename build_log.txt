@@ -1,0 +1,84 @@
+time="2025-05-21T18:32:31+03:00" level=warning msg="/Users/qntsnc/GolandProjects/exchange-point/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+Compose now can delegate build to bake for better performances
+Just set COMPOSE_BAKE=true
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [backend internal] load build definition from Dockerfile
+#1 transferring dockerfile: 583B done
+#1 DONE 0.0s
+
+#2 [backend internal] load metadata for docker.io/library/golang:1.21-alpine
+#2 DONE 0.6s
+
+#3 [backend internal] load metadata for docker.io/library/alpine:latest
+#3 DONE 0.6s
+
+#4 [backend internal] load .dockerignore
+#4 transferring context: 2B done
+#4 DONE 0.0s
+
+#5 [backend builder 1/7] FROM docker.io/library/golang:1.21-alpine@sha256:2414035b086e3c42b99654c8b26e6f5b1b1598080d65fd03c7f499552ff4dc94
+#5 resolve docker.io/library/golang:1.21-alpine@sha256:2414035b086e3c42b99654c8b26e6f5b1b1598080d65fd03c7f499552ff4dc94 0.0s done
+#5 DONE 0.0s
+
+#6 [backend builder 2/7] WORKDIR /build
+#6 CACHED
+
+#7 [backend stage-1 1/4] FROM docker.io/library/alpine:latest@sha256:a8560b36e8b8210634f77d9f7f9efd7ffa463e380b75e2e74aff4511df3ef88c
+#7 resolve docker.io/library/alpine:latest@sha256:a8560b36e8b8210634f77d9f7f9efd7ffa463e380b75e2e74aff4511df3ef88c 0.0s done
+#7 DONE 0.0s
+
+#8 [backend stage-1 2/4] WORKDIR /app
+#8 CACHED
+
+#9 [backend internal] load build context
+#9 transferring context: 2.52kB done
+#9 DONE 0.0s
+
+#10 [backend builder 3/7] COPY go.mod go.sum ./
+#10 DONE 0.0s
+
+#11 [backend builder 4/7] RUN go mod download && go mod verify
+#11 4.455 all modules verified
+#11 DONE 4.6s
+
+#12 [backend builder 5/7] COPY . .
+#12 DONE 0.0s
+
+#13 [backend builder 6/7] RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/api/main.go
+#13 DONE 6.0s
+
+#14 [backend builder 7/7] RUN ls -l /build # <--- ДОБАВЬТЕ ЭТУ СТРОКУ (покажет содержимое /build после компиляции)
+#14 0.106 total 9124
+#14 0.106 -rw-r--r--    1 root     root           507 May 21 15:07 Dockerfile
+#14 0.106 drwxr-xr-x    3 root     root          4096 May 21 13:46 cmd
+#14 0.106 -rw-r--r--    1 root     root           870 May 21 13:27 go.mod
+#14 0.106 -rw-r--r--    1 root     root          2674 May 21 13:27 go.sum
+#14 0.106 drwxr-xr-x    5 root     root          4096 May 21 13:46 internal
+#14 0.106 -rwxr-xr-x    1 root     root       9309234 May 21 15:32 main
+#14 0.106 drwxr-xr-x    2 root     root          4096 May 21 14:26 migrations
+#14 0.106 drwxr-xr-x    2 root     root          4096 May 21 12:47 sqlc
+#14 DONE 0.1s
+
+#15 [backend stage-1 3/4] COPY --from=builder /build/main .
+#15 DONE 0.1s
+
+#16 [backend stage-1 4/4] RUN ls -l /app
+#16 0.085 total 9092
+#16 0.085 -rwxr-xr-x    1 root     root       9309234 May 21 15:32 main
+#16 DONE 0.1s
+
+#17 [backend] exporting to image
+#17 exporting layers
+#17 exporting layers 0.3s done
+#17 exporting manifest sha256:9fc4792d2c8e95887f22eb9e5bc23a8694d9c1e2704a10a2f63b9f4d408fa110 done
+#17 exporting config sha256:e520847d2b6328108d20d5b4d1145360e42fe17f3a5755c8bb4b24a88ffba237 done
+#17 exporting attestation manifest sha256:45f56cf871b471db49345f883668a75e02cc07b4e022aa0f877cc674c0e6f164 done
+#17 exporting manifest list sha256:88ce14c475a68f6dc7d2f5b1c46cfe0ef7d0a1cf7cda9b2e7409b0a35d002d67 done
+#17 naming to docker.io/library/exchange-point-backend:latest done
+#17 unpacking to docker.io/library/exchange-point-backend:latest 0.0s done
+#17 DONE 0.3s
+
+#18 [backend] resolving provenance for metadata file
+#18 DONE 0.0s
+ backend  Built

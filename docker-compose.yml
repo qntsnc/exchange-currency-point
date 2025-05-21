@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  postgres_db:
+    image: postgres:15-alpine
+    container_name: exchange_postgres
+    environment:
+      POSTGRES_USER: exchange_user
+      POSTGRES_PASSWORD: exchange_password
+      POSTGRES_DB: exchange_db
+    volumes:
+      - ./backend/migrations:/docker-entrypoint-initdb.d # Путь к миграциям
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U exchange_user -d exchange_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: # <--- ДОБАВЛЕНО
+      - exchange-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: exchange_backend
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./backend/.env.example
+    environment:
+      DATABASE_URL: "postgres://exchange_user:exchange_password@postgres_db:5432/exchange_db?sslmode=disable"
+      APP_PORT: "8080"
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks: # <--- ДОБАВЛЕНО
+      - exchange-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: exchange_frontend
+    ports:
+      - "3000:80"
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks: # <--- ДОБАВЛЕНО
+      - exchange-network
+
+volumes:
+  postgres_data:
+
+networks: # <--- ДОБАВЛЕНО
+  exchange-network:
+    driver: bridge
