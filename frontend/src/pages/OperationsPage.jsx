@@ -123,11 +123,68 @@ const OperationsPage = () => {
     const num = parseFloat(decimalStr);
     return isNaN(num) ? decimalStr : num.toFixed(2);
   };
+  
   const formatRate = (rateStr) => {
     if (!rateStr) return 'N/A';
     const num = parseFloat(rateStr);
     return isNaN(num) ? rateStr : num.toFixed(4);
   };
+
+  // Улучшенная функция форматирования даты
+  const formatDate = (dateTimeStr) => {
+  if (!dateTimeStr) return 'Не указано';
+  
+  try {
+    // Если dateTimeStr это объект с полем Time, извлекаем значение Time
+    if (typeof dateTimeStr === 'object' && dateTimeStr !== null) {
+      if (dateTimeStr.Time) {
+        dateTimeStr = dateTimeStr.Time;
+      } else {
+        // Если нет поля Time, но есть Valid, возможно это NullTime из Go
+        if (dateTimeStr.Valid === false) {
+          return 'Не указано';
+        }
+        // Попробуем преобразовать объект в строку
+        dateTimeStr = String(dateTimeStr);
+      }
+    }
+    
+    // Если dateTimeStr это строка
+    if (typeof dateTimeStr === 'string') {
+      // Обработка формата ISO 8601 с Z в конце и микросекундами
+      const isoRegex = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(\.\d+)?([+-]\d{2}:\d{2}|Z)?$/;
+      const match = dateTimeStr.match(isoRegex);
+      
+      if (match) {
+        // Уже валидный ISO формат, можем использовать напрямую
+        const date = new Date(dateTimeStr);
+        return date.toLocaleString('ru-RU');
+      }
+      
+      // Проверяем формат "YYYY-MM-DD HH:MM:SS"
+      const dateMatch = dateTimeStr.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
+      if (dateMatch) {
+        const cleanedDate = dateMatch[1].replace(' ', 'T');
+        const date = new Date(cleanedDate);
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleString('ru-RU');
+        }
+      }
+    }
+    
+    // Если все специальные проверки не сработали, пробуем просто создать Date
+    const date = new Date(dateTimeStr);
+    if (!isNaN(date.getTime())) {
+      return date.toLocaleString('ru-RU');
+    }
+    
+    // Если ничего не сработало
+    return 'Некорректная дата';
+  } catch (error) {
+    console.error('Ошибка обработки даты:', error);
+    return 'Ошибка даты';
+  }
+};
 
   return (
     <div>
@@ -193,7 +250,7 @@ const OperationsPage = () => {
                 <td>{formatDecimal(op.amount_currency)} {op.currency_code}</td>
                 <td>{formatDecimal(op.amount_rub)} RUB</td>
                 <td>{formatRate(op.effective_rate)}</td>
-                <td>{new Date(op.operation_timestamp).toLocaleString()}</td>
+                <td>{formatDate(op.operation_timestamp)}</td>
                 <td>{op.receipt_reference}</td>
               </tr>
             ))}

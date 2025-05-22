@@ -42,7 +42,7 @@ const ClientsPage = () => {
         setFormError('Номер паспорта и ФИО обязательны для заполнения.');
         return;
     }
-    setLoading(true); // Можно использовать отдельный стейт для формы
+    setLoading(true);
     try {
       const response = await fetch('http://localhost:8080/api/v1/clients', {
         method: 'POST',
@@ -62,6 +62,61 @@ const ClientsPage = () => {
       setLoading(false);
     }
   };
+
+  const formatDate = (dateTimeStr) => {
+  if (!dateTimeStr) return 'Не указано';
+  
+  try {
+    // Если dateTimeStr это объект с полем Time, извлекаем значение Time
+    if (typeof dateTimeStr === 'object' && dateTimeStr !== null) {
+      if (dateTimeStr.Time) {
+        dateTimeStr = dateTimeStr.Time;
+      } else {
+        // Если нет поля Time, но есть Valid, возможно это NullTime из Go
+        if (dateTimeStr.Valid === false) {
+          return 'Не указано';
+        }
+        // Попробуем преобразовать объект в строку
+        dateTimeStr = String(dateTimeStr);
+      }
+    }
+    
+    // Если dateTimeStr это строка
+    if (typeof dateTimeStr === 'string') {
+      // Обработка формата ISO 8601 с Z в конце и микросекундами
+      const isoRegex = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(\.\d+)?([+-]\d{2}:\d{2}|Z)?$/;
+      const match = dateTimeStr.match(isoRegex);
+      
+      if (match) {
+        // Уже валидный ISO формат, можем использовать напрямую
+        const date = new Date(dateTimeStr);
+        return date.toLocaleString('ru-RU');
+      }
+      
+      // Проверяем формат "YYYY-MM-DD HH:MM:SS"
+      const dateMatch = dateTimeStr.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
+      if (dateMatch) {
+        const cleanedDate = dateMatch[1].replace(' ', 'T');
+        const date = new Date(cleanedDate);
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleString('ru-RU');
+        }
+      }
+    }
+    
+    // Если все специальные проверки не сработали, пробуем просто создать Date
+    const date = new Date(dateTimeStr);
+    if (!isNaN(date.getTime())) {
+      return date.toLocaleString('ru-RU');
+    }
+    
+    // Если ничего не сработало
+    return 'Некорректная дата';
+  } catch (error) {
+    console.error('Ошибка обработки даты:', error);
+    return 'Ошибка даты';
+  }
+};
 
   return (
     <div>
@@ -107,7 +162,7 @@ const ClientsPage = () => {
                 <td>{client.full_name}</td>
                 <td>{client.passport_number}</td>
                 <td>{client.phone_number?.String || 'N/A'}</td>
-                <td>{new Date(client.created_at).toLocaleString()}</td>
+                <td>{formatDate(client.created_at)}</td>
               </tr>
             ))}
           </tbody>

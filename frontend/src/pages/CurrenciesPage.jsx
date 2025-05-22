@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { format, parseISO, isValid } from 'date-fns';
+import { ru } from 'date-fns/locale';
 
 const CurrenciesPage = () => {
   const [currencies, setCurrencies] = useState([]);
@@ -80,6 +82,61 @@ const CurrenciesPage = () => {
     return isNaN(num) ? rateStr : num.toFixed(6);
   };
 
+  // Новая функция для правильного форматирования даты
+  const formatDate = (dateTimeStr) => {
+  if (!dateTimeStr) return 'Не указано';
+  
+  try {
+    // Если dateTimeStr это объект с полем Time, извлекаем значение Time
+    if (typeof dateTimeStr === 'object' && dateTimeStr !== null) {
+      if (dateTimeStr.Time) {
+        dateTimeStr = dateTimeStr.Time;
+      } else {
+        // Если нет поля Time, но есть Valid, возможно это NullTime из Go
+        if (dateTimeStr.Valid === false) {
+          return 'Не указано';
+        }
+        // Попробуем преобразовать объект в строку
+        dateTimeStr = String(dateTimeStr);
+      }
+    }
+    
+    // Если dateTimeStr это строка
+    if (typeof dateTimeStr === 'string') {
+      // Обработка формата ISO 8601 с Z в конце и микросекундами
+      const isoRegex = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(\.\d+)?([+-]\d{2}:\d{2}|Z)?$/;
+      const match = dateTimeStr.match(isoRegex);
+      
+      if (match) {
+        // Уже валидный ISO формат, можем использовать напрямую
+        const date = new Date(dateTimeStr);
+        return date.toLocaleString('ru-RU');
+      }
+      
+      // Проверяем формат "YYYY-MM-DD HH:MM:SS"
+      const dateMatch = dateTimeStr.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
+      if (dateMatch) {
+        const cleanedDate = dateMatch[1].replace(' ', 'T');
+        const date = new Date(cleanedDate);
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleString('ru-RU');
+        }
+      }
+    }
+    
+    // Если все специальные проверки не сработали, пробуем просто создать Date
+    const date = new Date(dateTimeStr);
+    if (!isNaN(date.getTime())) {
+      return date.toLocaleString('ru-RU');
+    }
+    
+    // Если ничего не сработало
+    return 'Некорректная дата';
+  } catch (error) {
+    console.error('Ошибка обработки даты:', error);
+    return 'Ошибка даты';
+  }
+};
   return (
     <div>
       <h2>Валюты и Курсы</h2>
@@ -123,7 +180,9 @@ const CurrenciesPage = () => {
                 <td style={{ border: '1px solid #ddd', padding: '8px' }}>{currency.name}</td>
                 <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatRate(currency.buy_rate)}</td>
                 <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatRate(currency.sell_rate)}</td>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{new Date(currency.last_rate_update_at).toLocaleString()}</td>
+                <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                  {formatDate(currency.last_rate_update_at)}
+                </td>
                 <td style={{ border: '1px solid #ddd', padding: '8px' }}>
                   <button onClick={() => setEditCurrency({ ...currency })}>Редактировать</button>
                 </td>
