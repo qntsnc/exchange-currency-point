@@ -1,24 +1,16 @@
 version: "2"
 sql:
   - engine: "postgresql"
-    queries: "query.sql"
+    queries: 
+      - "query.sql"
     schema: "schema.sql"
     gen:
       go:
         package: "sqlcgen"
         out: "../internal/repository/sqlcgen"
-        sql_package: "database/sql" # Используем database/sql для lib/pq
+        sql_package: "database/sql"
         emit_json_tags: true
         emit_prepared_queries: false
         emit_interface: true
         emit_exact_table_names: false
         emit_empty_slices: true
-        # Для decimal/numeric типов, чтобы генерировались как string (для database/sql)
-        # или можно использовать overrides для specific types, если нужно.
-        # По умолчанию sqlc для decimal/numeric с database/sql может генерировать string.
-        # Если он генерирует []byte, то нужно будет добавить override.
-        # overrides:
-        #   - db_type: "numeric"
-        #     go_type: "string"
-        #   - db_type: "decimal"
-        #     go_type: "string"

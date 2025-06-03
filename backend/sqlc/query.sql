@@ -56,6 +56,32 @@ INSERT INTO operations (
 )
 RETURNING *;
 
+-- name: GetOperationsForAnalytics :many
+SELECT 
+    o.id,
+    o.client_id,
+    c.full_name AS client_name,
+    o.operation_type,
+    o.currency_id,
+    cur.code AS currency_code,
+    cur.name AS currency_name,
+    o.amount_currency,
+    o.amount_rub,
+    o.effective_rate,
+    o.operation_timestamp,
+    o.receipt_reference
+FROM 
+    operations o
+JOIN 
+    clients c ON o.client_id = c.id
+JOIN                 
+    currencies cur ON o.currency_id = cur.id
+WHERE 
+    o.operation_timestamp >= sqlc.arg(start_date)::timestamptz 
+    AND o.operation_timestamp <= sqlc.arg(end_date)::timestamptz
+ORDER BY 
+    o.operation_timestamp ASC;
+
 -- name: ListOperations :many
 SELECT
     o.id,

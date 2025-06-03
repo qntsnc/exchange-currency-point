@@ -1,20 +1,38 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom'; // Используем NavLink для activeClassName
+import { NavLink } from 'react-router-dom';
 import './Navbar.css';
 
 const Navbar = () => {
   return (
     <nav className="navbar">
-      <NavLink to="/" className="navbar-brand">Обменник</NavLink>
-      <ul className="navbar-nav">
-        <li className="nav-item">
-          <NavLink to="/operations" className={({isActive}) => isActive ? "nav-link active" : "nav-link"}>Операции</NavLink>
+      <div className="navbar-logo">
+        <NavLink to="/">Обменный пункт</NavLink>
+      </div>
+      <ul className="navbar-links">
+        <li>
+          <NavLink to="/" exact activeClassName="active">
+            Главная
+          </NavLink>
         </li>
-        <li className="nav-item">
-          <NavLink to="/clients" className={({isActive}) => isActive ? "nav-link active" : "nav-link"}>Клиенты</NavLink>
+        <li>
+          <NavLink to="/clients" activeClassName="active">
+            Клиенты
+          </NavLink>
         </li>
-        <li className="nav-item">
-          <NavLink to="/currencies" className={({isActive}) => isActive ? "nav-link active" : "nav-link"}>Валюты</NavLink>
+        <li>
+          <NavLink to="/currencies" activeClassName="active">
+            Валюты
+          </NavLink>
+        </li>
+        <li>
+          <NavLink to="/operations" activeClassName="active">
+            Операции
+          </NavLink>
+        </li>
+        <li>
+          <NavLink to="/analytics" activeClassName="active">
+            Аналитика
+          </NavLink>
         </li>
       </ul>
     </nav>

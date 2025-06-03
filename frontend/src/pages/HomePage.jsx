@@ -1,18 +1,39 @@
 import React from 'react';
 
-const HomePage = () => {
+const Homepage = () => {
   return (
-    <div>
-      <h1>Добро пожаловать в Информационную Систему "Обменный Пункт"</h1>
-      <p>Эта система предназначена для учета операций по обмену валюты.</p>
-      <p>Используйте навигационную панель для перехода к разделам:</p>
-      <ul>
-        <li><strong>Операции:</strong> Просмотр и создание операций обмена.</li>
-        <li><strong>Клиенты:</strong> Управление информацией о клиентах.</li>
-        <li><strong>Валюты:</strong> Просмотр текущих курсов валют.</li>
-      </ul>
+    <div className="homepage">
+      <div className="hero">
+        <h1>Добро пожаловать в Информационную Систему "Обменный Пункт"</h1>
+        <p className="subtitle">
+          Эта система предназначена для учета операций по обмену валюты и управления данными.
+        </p>
+      </div>
+      <div className="features">
+        <div className="feature-card">
+          <h3>Операции</h3>
+          <p>Просмотр и создание операций обмена валюты.</p>
+          <a href="/operations" className="feature-link">
+            Перейти &rarr;
+          </a>
+        </div>
+        <div className="feature-card">
+          <h3>Клиенты</h3>
+          <p>Управление информацией о клиентах системы.</p>
+          <a href="/clients" className="feature-link">
+            Перейти &rarr;
+          </a>
+        </div>
+        <div className="feature-card">
+          <h3>Валюты</h3>
+          <p>Просмотр текущих курсов и управление валютами.</p>
+          <a href="/currencies" className="feature-link">
+            Перейти &rarr;
+          </a>
+        </div>
+      </div>
     </div>
   );
 };
 
-export default HomePage;
+export default Homepage;

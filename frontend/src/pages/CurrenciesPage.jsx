@@ -6,8 +6,14 @@ const CurrenciesPage = () => {
   const [currencies, setCurrencies] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [newCurrency, setNewCurrency] = useState({ code: '', name: '', buy_rate: '', sell_rate: '', rate_to_usd: '' });
+  const [newCurrency, setNewCurrency] = useState({ code: '', name: '', buy_rate: '', sell_rate: '' });
   const [editCurrency, setEditCurrency] = useState(null);
+  const [activeTab, setActiveTab] = useState('currencies');
+  const [operationLimits, setOperationLimits] = useState([
+    { id: 1, limit_name: 'daily_currency_volume', limit_value: '1000.0', description: 'Максимальный объем операций с иностранной валютой для клиента за день', updated_at: new Date().toISOString() },
+    { id: 2, limit_name: 'single_operation_amount', limit_value: '5000.0', description: 'Максимальная сумма одной операции', updated_at: new Date().toISOString() },
+  ]);
+  const [editingLimit, setEditingLimit] = useState(null);
 
   const fetchCurrencies = useCallback(async () => {
     setLoading(true);
@@ -22,7 +28,7 @@ const CurrenciesPage = () => {
       setCurrencies(data.data || []);
     } catch (err) {
       setError('Ошибка загрузки валют: ' + err.message);
-      console.error(err);
+      console.error('Fetch currencies error:', err);
     } finally {
       setLoading(false);
     }
@@ -31,17 +37,42 @@ const CurrenciesPage = () => {
   const handleCreateCurrency = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
     try {
+      // Валидация
+      if (!newCurrency.code || !newCurrency.name || !newCurrency.buy_rate || !newCurrency.sell_rate) {
+        throw new Error('Все поля обязательны');
+      }
+      const buyRate = parseFloat(newCurrency.buy_rate);
+      const sellRate = parseFloat(newCurrency.sell_rate);
+      if (isNaN(buyRate) || buyRate <= 0) {
+        throw new Error('Курс покупки должен быть положительным числом');
+      }
+      if (isNaN(sellRate) || sellRate <= 0) {
+        throw new Error('Курс продажи должен быть положительным числом');
+      }
+
+      const payload = {
+        code: newCurrency.code,
+        name: newCurrency.name,
+        buy_rate: buyRate.toFixed(8), // Форматируем как строку
+        sell_rate: sellRate.toFixed(8),
+      };
+      console.log('Creating currency payload:', payload);
       const response = await fetch('http://localhost:8080/api/v1/currencies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newCurrency),
+        body: JSON.stringify(payload),
       });
-      if (!response.ok) throw new Error('Failed to create currency');
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.message || `Failed to create currency (${response.status})`);
+      }
       fetchCurrencies();
-      setNewCurrency({ code: '', name: '', buy_rate: '', sell_rate: '', rate_to_usd: '' });
+      setNewCurrency({ code: '', name: '', buy_rate: '', sell_rate: '' });
     } catch (err) {
       setError('Ошибка создания валюты: ' + err.message);
+      console.error('Create currency error:', err);
     } finally {
       setLoading(false);
     }
@@ -51,25 +82,68 @@ const CurrenciesPage = () => {
     e.preventDefault();
     if (!editCurrency) return;
     setLoading(true);
+    setError('');
     try {
+      // Валидация
+      if (!editCurrency.code || !editCurrency.buy_rate || !editCurrency.sell_rate) {
+        throw new Error('Все поля обязательны');
+      }
+      const buyRate = parseFloat(editCurrency.buy_rate);
+      const sellRate = parseFloat(editCurrency.sell_rate);
+      if (isNaN(buyRate) || buyRate <= 0) {
+        throw new Error('Курс покупки должен быть положительным числом');
+      }
+      if (isNaN(sellRate) || sellRate <= 0) {
+        throw new Error('Курс продажи должен быть положительным числом');
+      }
+
+      const payload = {
+        code: editCurrency.code,
+        buy_rate: Number(buyRate.toFixed(8)),
+        sell_rate: Number(sellRate.toFixed(8)) ,
+      };
+      console.log('Updating currency payload:', payload);
       const response = await fetch('http://localhost:8080/api/v1/currencies', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          code: editCurrency.code,
-          buy_rate: editCurrency.buy_rate,
-          sell_rate: editCurrency.sell_rate,
-          rate_to_usd: editCurrency.rate_to_usd,
-        }),
+        body: JSON.stringify(payload),
       });
-      if (!response.ok) throw new Error('Failed to update currency');
+      if (!response.ok) {
+        let message = `Failed to update currency (${response.status})`;
+        try {
+          const errData = await response.json();
+          message = errData.message || message;
+          if (message.includes('not found')) {
+            message = 'Валюта не найдена';
+          } else if (message.includes('Invalid buy_rate')) {
+            message = 'Неверный формат курса покупки';
+          } else if (message.includes('Invalid sell_rate')) {
+            message = 'Неверный формат курса продажи';
+          }
+        } catch (jsonErr) {
+          console.error('Error parsing error response:', jsonErr);
+        }
+        throw new Error(message);
+      }
       fetchCurrencies();
       setEditCurrency(null);
     } catch (err) {
       setError('Ошибка обновления валюты: ' + err.message);
+      console.error('Update currency error:', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleUpdateLimit = (e) => {
+    e.preventDefault();
+    if (!editingLimit) return;
+    setOperationLimits(prev =>
+      prev.map(limit =>
+        limit.id === editingLimit.id ? { ...limit, limit_value: editingLimit.limit_value, updated_at: new Date().toISOString() } : limit
+      )
+    );
+    setEditingLimit(null);
   };
 
   useEffect(() => {
@@ -82,116 +156,298 @@ const CurrenciesPage = () => {
     return isNaN(num) ? rateStr : num.toFixed(6);
   };
 
-  // Новая функция для правильного форматирования даты
   const formatDate = (dateTimeStr) => {
-  if (!dateTimeStr) return 'Не указано';
-  
-  try {
-    // Если dateTimeStr это объект с полем Time, извлекаем значение Time
-    if (typeof dateTimeStr === 'object' && dateTimeStr !== null) {
-      if (dateTimeStr.Time) {
-        dateTimeStr = dateTimeStr.Time;
-      } else {
-        // Если нет поля Time, но есть Valid, возможно это NullTime из Go
-        if (dateTimeStr.Valid === false) {
-          return 'Не указано';
-        }
-        // Попробуем преобразовать объект в строку
-        dateTimeStr = String(dateTimeStr);
-      }
-    }
-    
-    // Если dateTimeStr это строка
-    if (typeof dateTimeStr === 'string') {
-      // Обработка формата ISO 8601 с Z в конце и микросекундами
-      const isoRegex = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(\.\d+)?([+-]\d{2}:\d{2}|Z)?$/;
-      const match = dateTimeStr.match(isoRegex);
-      
-      if (match) {
-        // Уже валидный ISO формат, можем использовать напрямую
-        const date = new Date(dateTimeStr);
+    if (!dateTimeStr) return 'Не указано';
+    try {
+      const date = new Date(dateTimeStr);
+      if (!isNaN(date.getTime())) {
         return date.toLocaleString('ru-RU');
       }
-      
-      // Проверяем формат "YYYY-MM-DD HH:MM:SS"
-      const dateMatch = dateTimeStr.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
-      if (dateMatch) {
-        const cleanedDate = dateMatch[1].replace(' ', 'T');
-        const date = new Date(cleanedDate);
-        if (!isNaN(date.getTime())) {
-          return date.toLocaleString('ru-RU');
-        }
-      }
+      return 'Некорректная дата';
+    } catch (error) {
+      console.error('Ошибка обработки даты:', error);
+      return 'Ошибка даты';
     }
-    
-    // Если все специальные проверки не сработали, пробуем просто создать Date
-    const date = new Date(dateTimeStr);
-    if (!isNaN(date.getTime())) {
-      return date.toLocaleString('ru-RU');
-    }
-    
-    // Если ничего не сработало
-    return 'Некорректная дата';
-  } catch (error) {
-    console.error('Ошибка обработки даты:', error);
-    return 'Ошибка даты';
-  }
-};
+  };
+
+  const getLimitDescription = (limitName) => {
+    const descriptions = {
+      'daily_currency_volume': 'Максимальный объем операций с иностранной валютой для клиента за день',
+      'single_operation_amount': 'Максимальная сумма одной операции'
+    };
+    return descriptions[limitName] || limitName;
+  };
+
+  const tabStyle = {
+    padding: '10px 20px',
+    marginRight: '10px',
+    backgroundColor: '#f0f0f0',
+    border: '1px solid #ddd',
+    borderBottom: 'none',
+    cursor: 'pointer',
+    borderRadius: '5px 5px 0 0'
+  };
+
+  const activeTabStyle = {
+    ...tabStyle,
+    backgroundColor: '#fff',
+    borderBottom: '1px solid #fff',
+    fontWeight: 'bold'
+  };
+
+  const contentStyle = {
+    border: '1px solid #ddd',
+    padding: '20px',
+    borderRadius: '0 5px 5px 5px'
+  };
+
   return (
     <div>
-      <h2>Валюты и Курсы</h2>
-      {error && <p className="error-message">{error}</p>}
-      <form onSubmit={editCurrency ? handleUpdateCurrency : handleCreateCurrency}>
-        <input value={editCurrency ? editCurrency.code : newCurrency.code} onChange={(e) => 
-          editCurrency ? setEditCurrency({ ...editCurrency, code: e.target.value }) : setNewCurrency({ ...newCurrency, code: e.target.value })} 
-          placeholder="Code" required disabled={editCurrency !== null} />
-        <input value={editCurrency ? editCurrency.name : newCurrency.name} onChange={(e) => 
-          editCurrency ? setEditCurrency({ ...editCurrency, name: e.target.value }) : setNewCurrency({ ...newCurrency, name: e.target.value })} 
-          placeholder="Name" required disabled={editCurrency !== null} />
-        <input type="number" step="0.00000001" value={editCurrency ? editCurrency.buy_rate : newCurrency.buy_rate} onChange={(e) => 
-          editCurrency ? setEditCurrency({ ...editCurrency, buy_rate: e.target.value }) : setNewCurrency({ ...newCurrency, buy_rate: e.target.value })} 
-          placeholder="Buy Rate" required />
-        <input type="number" step="0.00000001" value={editCurrency ? editCurrency.sell_rate : newCurrency.sell_rate} onChange={(e) => 
-          editCurrency ? setEditCurrency({ ...editCurrency, sell_rate: e.target.value }) : setNewCurrency({ ...newCurrency, sell_rate: e.target.value })} 
-          placeholder="Sell Rate" required />
-        <input type="number" step="0.00000001" value={editCurrency ? editCurrency.rate_to_usd : newCurrency.rate_to_usd} onChange={(e) => 
-          editCurrency ? setEditCurrency({ ...editCurrency, rate_to_usd: e.target.value }) : setNewCurrency({ ...newCurrency, rate_to_usd: e.target.value })} 
-          placeholder="Rate to USD" required />
-        <button type="submit" disabled={loading}>{editCurrency ? 'Обновить валюту' : 'Добавить валюту'}</button>
-        {editCurrency && <button type="button" onClick={() => setEditCurrency(null)}>Отмена</button>}
-      </form>
-      {loading && <p>Загрузка валют...</p>}
-      {!loading && currencies.length > 0 && (
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
-          <thead>
-            <tr style={{ backgroundColor: '#f0f0f0' }}>
-              <th style={{ border: '1px solid #ddd', padding: '8px' }}>Код</th>
-              <th style={{ border: '1px solid #ddd', padding: '8px' }}>Наименование</th>
-              <th style={{ border: '1px solid #ddd', padding: '8px' }}>Курс покупки</th>
-              <th style={{ border: '1px solid #ddd', padding: '8px' }}>Курс продажи</th>
-              <th style={{ border: '1px solid #ddd', padding: '8px' }}>Последнее обновление курса</th>
-              <th style={{ border: '1px solid #ddd', padding: '8px' }}>Действия</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currencies.map(currency => (
-              <tr key={currency.id} style={{ border: '1px solid #ddd' }}>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{currency.code}</td>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{currency.name}</td>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatRate(currency.buy_rate)}</td>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatRate(currency.sell_rate)}</td>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-                  {formatDate(currency.last_rate_update_at)}
-                </td>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-                  <button onClick={() => setEditCurrency({ ...currency })}>Редактировать</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-      {!loading && currencies.length === 0 && <p>Нет данных о валютах.</p>}
+      <div style={{ display: 'flex', marginBottom: '-1px' }}>
+        <div 
+          style={activeTab === 'currencies' ? activeTabStyle : tabStyle}
+          onClick={() => setActiveTab('currencies')}
+        >
+          Валюты и курсы
+        </div>
+        <div 
+          style={activeTab === 'limits' ? activeTabStyle : tabStyle}
+          onClick={() => setActiveTab('limits')}
+        >
+          Ограничения операций
+        </div>
+      </div>
+
+      <div style={contentStyle}>
+        {activeTab === 'currencies' && (
+          <>
+            <h2>Валюты и курсы</h2>
+            {error && <p className="error-message" style={{ color: 'red' }}>{error}</p>}
+            
+            <form onSubmit={editCurrency ? handleUpdateCurrency : handleCreateCurrency} style={{ marginBottom: '20px' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
+                <input 
+                  value={editCurrency ? editCurrency.code : newCurrency.code} 
+                  onChange={(e) => editCurrency 
+                    ? setEditCurrency({ ...editCurrency, code: e.target.value }) 
+                    : setNewCurrency({ ...newCurrency, code: e.target.value })
+                  } 
+                  placeholder="Код валюты" 
+                  required 
+                  disabled={editCurrency !== null}
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }} 
+                />
+                
+                <input 
+                  value={editCurrency ? editCurrency.name : newCurrency.name} 
+                  onChange={(e) => editCurrency 
+                    ? setEditCurrency({ ...editCurrency, name: e.target.value }) 
+                    : setNewCurrency({ ...newCurrency, name: e.target.value })
+                  } 
+                  placeholder="Наименование" 
+                  required 
+                  disabled={editCurrency !== null}
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }} 
+                />
+                
+                <input 
+                  type="number" 
+                  step="0.00000001" 
+                  value={editCurrency ? editCurrency.buy_rate : newCurrency.buy_rate} 
+                  onChange={(e) => editCurrency 
+                    ? setEditCurrency({ ...editCurrency, buy_rate: e.target.value }) 
+                    : setNewCurrency({ ...newCurrency, buy_rate: e.target.value })
+                  } 
+                  placeholder="Курс покупки" 
+                  required
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }} 
+                />
+                
+                <input 
+                  type="number" 
+                  step="0.00000001" 
+                  value={editCurrency ? editCurrency.sell_rate : newCurrency.sell_rate} 
+                  onChange={(e) => editCurrency 
+                    ? setEditCurrency({ ...editCurrency, sell_rate: e.target.value }) 
+                    : setNewCurrency({ ...newCurrency, sell_rate: e.target.value })
+                  } 
+                  placeholder="Курс продажи" 
+                  required
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }} 
+                />
+              </div>
+              
+              <div>
+                <button 
+                  type="submit" 
+                  disabled={loading}
+                  style={{ 
+                    padding: '8px 16px', 
+                    backgroundColor: '#4CAF50', 
+                    color: 'white', 
+                    border: 'none', 
+                    borderRadius: '4px', 
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    marginRight: '10px'
+                  }}
+                >
+                  {editCurrency ? 'Обновить валюту' : 'Добавить валюту'}
+                </button>
+                
+                {editCurrency && (
+                  <button 
+                    type="button" 
+                    onClick={() => setEditCurrency(null)}
+                    style={{ 
+                      padding: '8px 16px', 
+                      backgroundColor: '#f44336', 
+                      color: 'white', 
+                      border: 'none', 
+                      borderRadius: '4px', 
+                      cursor: 'pointer' 
+                    }}
+                  >
+                    Отмена
+                  </button>
+                )}
+              </div>
+            </form>
+            
+            {loading && <p>Загрузка валют...</p>}
+            
+            {!loading && currencies.length > 0 && (
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#f0f0f0' }}>
+                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Код</th>
+                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Наименование</th>
+                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Курс покупки</th>
+                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Курс продажи</th>
+                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Последнее обновление</th>
+                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Действия</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currencies.map(currency => (
+                    <tr key={currency.id} style={{ border: '1px solid #ddd' }}>
+                      <td style={{ border: '1px solid #ddd', padding: '8px' }}>{currency.code}</td>
+                      <td style={{ border: '1px solid #ddd', padding: '8px' }}>{currency.name}</td>
+                      <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatRate(currency.buy_rate)}</td>
+                      <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatRate(currency.sell_rate)}</td>
+                      <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                        {formatDate(currency.last_rate_update_at)}
+                      </td>
+                      <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                        <button 
+                          onClick={() => setEditCurrency({ ...currency })}
+                          style={{ 
+                            padding: '5px 10px', 
+                            backgroundColor: '#2196F3', 
+                            color: 'white', 
+                            border: 'none', 
+                            borderRadius: '4px', 
+                            cursor: 'pointer' 
+                          }}
+                        >
+                          Редактировать
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            
+            {!loading && currencies.length === 0 && <p>Нет данных о валютах.</p>}
+          </>
+        )}
+
+        {activeTab === 'limits' && (
+          <>
+            <h2>Ограничения операций</h2>
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f0f0f0' }}>
+                  <th style={{ border: '1px solid #ddd', padding: '8px' }}>Название</th>
+                  <th style={{ border: '1px solid #ddd', padding: '8px' }}>Описание</th>
+                  <th style={{ border: '1px solid #ddd', padding: '8px' }}>Значение</th>
+                  <th style={{ border: '1px solid #ddd', padding: '8px' }}>Последнее обновление</th>
+                  <th style={{ border: '1px solid #ddd', padding: '8px' }}>Действия</th>
+                </tr>
+              </thead>
+              <tbody>
+                {operationLimits.map(limit => (
+                  <tr key={limit.id} style={{ border: '1px solid #ddd' }}>
+                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{limit.limit_name}</td>
+                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{limit.description}</td>
+                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                      {editingLimit && editingLimit.id === limit.id ? (
+                        <input 
+                          type="number" 
+                          step="0.0001" 
+                          value={editingLimit.limit_value}
+                          onChange={(e) => setEditingLimit({...editingLimit, limit_value: e.target.value})}
+                          style={{ width: '100px', padding: '5px' }}
+                        />
+                      ) : (
+                        formatRate(limit.limit_value)
+                      )}
+                    </td>
+                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatDate(limit.updated_at)}</td>
+                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                      {editingLimit && editingLimit.id === limit.id ? (
+                        <>
+                          <button 
+                            onClick={handleUpdateLimit}
+                            style={{ 
+                              padding: '5px 10px', 
+                              backgroundColor: '#4CAF50', 
+                              color: 'white', 
+                              border: 'none', 
+                              borderRadius: '4px', 
+                              cursor: 'pointer',
+                              marginRight: '5px'
+                            }}
+                          >
+                            Сохранить
+                          </button>
+                          <button 
+                            onClick={() => setEditingLimit(null)}
+                            style={{ 
+                              padding: '5px 10px', 
+                              backgroundColor: '#f44336', 
+                              color: 'white', 
+                              border: 'none', 
+                              borderRadius: '4px', 
+                              cursor: 'pointer' 
+                            }}
+                          >
+                            Отмена
+                          </button>
+                        </>
+                      ) : (
+                        <button 
+                          onClick={() => setEditingLimit({ ...limit })}
+                          style={{ 
+                            padding: '5px 10px', 
+                            backgroundColor: '#2196F3', 
+                            color: 'white', 
+                            border: 'none', 
+                            borderRadius: '4px', 
+                            cursor: 'pointer' 
+                          }}
+                        >
+                          Редактировать
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
+      </div>
     </div>
   );
 };

@@ -225,6 +225,89 @@ func (q *Queries) GetDailyClientForeignCurrencyVolume(ctx context.Context, arg G
 	return total_volume, err
 }
 
+const getOperationsForAnalytics = `-- name: GetOperationsForAnalytics :many
+SELECT 
+    o.id,
+    o.client_id,
+    c.full_name AS client_name,
+    o.operation_type,
+    o.currency_id,
+    cur.code AS currency_code,
+    cur.name AS currency_name,
+    o.amount_currency,
+    o.amount_rub,
+    o.effective_rate,
+    o.operation_timestamp,
+    o.receipt_reference
+FROM 
+    operations o
+JOIN 
+    clients c ON o.client_id = c.id
+JOIN                 
+    currencies cur ON o.currency_id = cur.id
+WHERE 
+    o.operation_timestamp >= $1::timestamptz 
+    AND o.operation_timestamp <= $2::timestamptz
+ORDER BY 
+    o.operation_timestamp ASC
+`
+
+type GetOperationsForAnalyticsParams struct {
+	StartDate time.Time `json:"start_date"`
+	EndDate   time.Time `json:"end_date"`
+}
+
+type GetOperationsForAnalyticsRow struct {
+	ID                 int64        `json:"id"`
+	ClientID           int32        `json:"client_id"`
+	ClientName         string       `json:"client_name"`
+	OperationType      string       `json:"operation_type"`
+	CurrencyID         int32        `json:"currency_id"`
+	CurrencyCode       string       `json:"currency_code"`
+	CurrencyName       string       `json:"currency_name"`
+	AmountCurrency     string       `json:"amount_currency"`
+	AmountRub          string       `json:"amount_rub"`
+	EffectiveRate      string       `json:"effective_rate"`
+	OperationTimestamp sql.NullTime `json:"operation_timestamp"`
+	ReceiptReference   string       `json:"receipt_reference"`
+}
+
+func (q *Queries) GetOperationsForAnalytics(ctx context.Context, arg GetOperationsForAnalyticsParams) ([]GetOperationsForAnalyticsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getOperationsForAnalytics, arg.StartDate, arg.EndDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetOperationsForAnalyticsRow{}
+	for rows.Next() {
+		var i GetOperationsForAnalyticsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ClientID,
+			&i.ClientName,
+			&i.OperationType,
+			&i.CurrencyID,
+			&i.CurrencyCode,
+			&i.CurrencyName,
+			&i.AmountCurrency,
+			&i.AmountRub,
+			&i.EffectiveRate,
+			&i.OperationTimestamp,
+			&i.ReceiptReference,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listClients = `-- name: ListClients :many
 SELECT id, passport_number, full_name, phone_number, created_at FROM clients
 ORDER BY full_name

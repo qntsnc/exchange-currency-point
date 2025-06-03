@@ -24,10 +24,11 @@ type CreateOperationRequest struct {
 	ClientID      int32  `json:"client_id" validate:"required"`
 	OperationType string `json:"operation_type" validate:"required,oneof=CLIENT_SELLS_TO_EXCHANGE CLIENT_BUYS_FROM_EXCHANGE"`
 	CurrencyID    int32  `json:"currency_id" validate:"required"`
-	Amount        string `json:"amount" validate:"required,gt=0"` // Сумма валюты (для продажи) или рублей (для покупки)
+	Amount        string `json:"amount" validate:"required,gt=0"`
+	DailyLimit    string `json:"daily_currency_volume" validate:"required,gt=0"`   // Новый параметр
+	SingleLimit   string `json:"single_operation_amount" validate:"required,gt=0"` // Новый параметр
 }
 
-// Helper to convert string decimal to *big.Float for precise calculations
 func toBigFloat(s string) (*big.Float, error) {
 	f, _, err := big.ParseFloat(s, 10, 256, big.ToNearestEven)
 	if err != nil {
@@ -48,7 +49,6 @@ func (h *OperationHandler) CreateOperation(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"status": "error", "message": "Currency not found", "data": err.Error()})
 	}
 
-	// Проверяем, что валюта не рубль (рубль не должен быть в таблице currencies)
 	if currencyDB.Code == "RUB" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "error", "message": "Operations with RUB as the selected currency are not allowed"})
 	}
@@ -58,7 +58,6 @@ func (h *OperationHandler) CreateOperation(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "error", "message": "Invalid amount format", "data": err.Error()})
 	}
-
 	buyRateBig, err := toBigFloat(currencyDB.BuyRate)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Invalid buy_rate format in DB", "data": err.Error()})
@@ -67,47 +66,70 @@ func (h *OperationHandler) CreateOperation(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Invalid sell_rate format in DB", "data": err.Error()})
 	}
+	dailyLimitBig, err := toBigFloat(req.DailyLimit)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "error", "message": "Invalid daily limit format", "data": err.Error()})
+	}
+	singleLimitBig, err := toBigFloat(req.SingleLimit)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "error", "message": "Invalid single operation limit format", "data": err.Error()})
+	}
 
 	// Расчёт операции
 	var amountCurrencyBig, amountRubBig, effectiveRateBig *big.Float
-
 	if req.OperationType == "CLIENT_SELLS_TO_EXCHANGE" {
-		// Клиент продаёт валюту, получает рубли
-		amountCurrencyBig = amountBig                                          // Сумма валюты
-		effectiveRateBig = sellRateBig                                         // Используем курс продажи
-		amountRubBig = new(big.Float).Mul(amountCurrencyBig, effectiveRateBig) // Рубли = валюта * курс продажи
+		amountCurrencyBig = amountBig
+		effectiveRateBig = sellRateBig
+		amountRubBig = new(big.Float).Mul(amountCurrencyBig, effectiveRateBig)
 	} else if req.OperationType == "CLIENT_BUYS_FROM_EXCHANGE" {
-		// Клиент покупает валюту за рубли
-		amountRubBig = amountBig                                               // Сумма рублей
-		effectiveRateBig = buyRateBig                                          // Используем курс покупки
-		amountCurrencyBig = new(big.Float).Quo(amountRubBig, effectiveRateBig) // Валюта = рубли / курс покупки
+		amountRubBig = amountBig
+		effectiveRateBig = buyRateBig
+		amountCurrencyBig = new(big.Float).Quo(amountRubBig, effectiveRateBig)
 	} else {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "error", "message": "Invalid operation type"})
 	}
 
-	// Проверка дневного лимита (1000 единиц иностранной валюты)
-	dailyVolumeParams := sqlcgen.GetDailyClientForeignCurrencyVolumeParams{
-		ClientID:          req.ClientID,
-		ForeignCurrencyID: req.CurrencyID,
-		OperationDate:     time.Now(),
+	// Проверка лимита на сумму одной операции
+	if amountCurrencyBig.Cmp(singleLimitBig) > 0 {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"status": "error",
+			"message": fmt.Sprintf("Single operation amount exceeds limit. Current limit: %s, requested: %s %s",
+				singleLimitBig.Text('f', 4), amountCurrencyBig.Text('f', 4), currencyDB.Code),
+		})
 	}
-	currentVolumeStr, err := h.queries.GetDailyClientForeignCurrencyVolume(c.Context(), dailyVolumeParams)
+
+	// Проверка дневного лимита через аналитику
+	today := time.Now().Truncate(24 * time.Hour)
+	sqlParams := sqlcgen.GetOperationsForAnalyticsParams{
+		StartDate: today,
+		EndDate:   today.Add(24 * time.Hour).Add(-time.Nanosecond),
+	}
+	operations, err := h.queries.GetOperationsForAnalytics(c.Context(), sqlParams)
 	if err != nil && err != sql.ErrNoRows {
-		log.Printf("Error getting daily volume: %v", err)
-	} else if err == nil {
-		currentVolumeBig, convErr := toBigFloat(currentVolumeStr)
-		if convErr != nil {
-			log.Printf("Error converting current volume string to big.Float: %v", convErr)
-		} else {
-			totalVolumeBig := new(big.Float).Add(currentVolumeBig, amountCurrencyBig)
-			limitBig := big.NewFloat(1000.00)
-			if totalVolumeBig.Cmp(limitBig) > 0 {
-				return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-					"status":  "error",
-					"message": fmt.Sprintf("Daily limit of 1000 units for foreign currency %s exceeded. Current today: %s, this op: %s", currencyDB.Code, currentVolumeBig.Text('f', 2), amountCurrencyBig.Text('f', 2)),
-				})
+		log.Printf("Error fetching operations for analytics: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Could not fetch analytics data", "data": err.Error()})
+	}
+
+	// Вычисляем текущий дневной объём для клиента и валюты
+	currentVolumeBig := big.NewFloat(0)
+	for _, op := range operations {
+		if op.ClientID == req.ClientID && op.CurrencyID == req.CurrencyID {
+			vol, err := toBigFloat(op.AmountCurrency)
+			if err != nil {
+				log.Printf("Error converting operation volume: %v", err)
+				continue
 			}
+			currentVolumeBig.Add(currentVolumeBig, vol)
 		}
+	}
+
+	totalVolumeBig := new(big.Float).Add(currentVolumeBig, amountCurrencyBig)
+	if totalVolumeBig.Cmp(dailyLimitBig) > 0 {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"status": "error",
+			"message": fmt.Sprintf("Daily limit of %s units for foreign currency %s exceeded. Current today: %s, this op: %s",
+				dailyLimitBig.Text('f', 2), currencyDB.Code, currentVolumeBig.Text('f', 2), amountCurrencyBig.Text('f', 2)),
+		})
 	}
 
 	// Подготовка параметров для sqlc
@@ -149,7 +171,7 @@ func (h *OperationHandler) GetOperations(c *fiber.Ctx) error {
 		Offset: int32(offset),
 	}
 
-	operations, err := h.queries.ListOperations(c.Context(), params) // Исправлено: queries вместо quires
+	operations, err := h.queries.ListOperations(c.Context(), params)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Could not retrieve operations", "data": err.Error()})
 	}

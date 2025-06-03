@@ -1,4 +1,4 @@
 .App {
   text-align: center;
+  background: transparent;
 }
-/* Можно оставить пустым или добавить глобальные стили для App, если Layout не покрывает */

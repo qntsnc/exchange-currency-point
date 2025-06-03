@@ -3,20 +3,21 @@ package router
 import (
 	"database/sql"
 	"exchange_point/backend/internal/api/handler"
-	"exchange_point/backend/internal/repository/sqlcgen" // Путь к сгенерированному коду
+	"exchange_point/backend/internal/repository/sqlcgen"
+	"exchange_point/backend/internal/service"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 func SetupRoutes(app *fiber.App, dbConnection *sql.DB) {
-	// sqlcgen.New принимает *sql.DB (или *sql.Tx),
-	// так как *sql.DB реализует интерфейс DBTX, который ожидает sqlc.
 	queries := sqlcgen.New(dbConnection)
 
 	healthHandler := handler.NewHealthHandler()
 	clientHandler := handler.NewClientHandler(queries)
 	currencyHandler := handler.NewCurrencyHandler(queries)
 	operationHandler := handler.NewOperationHandler(queries)
+	analyticsHandler := handler.NewAnalyticsHandler(queries)
+	receiptHandler := handler.NewReceiptHandler(queries, service.NewPdfService())
 
 	api := app.Group("/api/v1")
 
@@ -27,13 +28,19 @@ func SetupRoutes(app *fiber.App, dbConnection *sql.DB) {
 	api.Get("/clients", clientHandler.GetClients)
 	api.Post("/clients", clientHandler.CreateClient)
 	api.Get("/clients/:id", clientHandler.GetClientByID)
-	app.Post("/api/v1/currencies", currencyHandler.CreateCurrency)
-	app.Put("/api/v1/currencies", currencyHandler.UpdateCurrency)
+
 	// Currencies
 	api.Get("/currencies", currencyHandler.GetCurrencies)
-	// api.Post("/currencies/rate", currencyHandler.UpdateRate) // Пример для обновления курса
+	api.Post("/currencies", currencyHandler.CreateCurrency)
+	api.Put("/currencies", currencyHandler.UpdateCurrency)
 
 	// Operations
 	api.Get("/operations", operationHandler.GetOperations)
 	api.Post("/operations", operationHandler.CreateOperation)
+
+	// Analytics
+	api.Get("/analytics/operations", analyticsHandler.GetOperationsAnalytics)
+
+	// Receipts
+	api.Get("/receipts/:reference", receiptHandler.GetReceiptByReference)
 }

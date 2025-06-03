@@ -6,6 +6,7 @@ package sqlcgen
 
 import (
 	"database/sql"
+	"time"
 )
 
 type Client struct {
@@ -38,4 +39,13 @@ type Operation struct {
 	OperationTimestamp sql.NullTime `json:"operation_timestamp"`
 	ReceiptReference   string       `json:"receipt_reference"`
 	CreatedAt          sql.NullTime `json:"created_at"`
+}
+
+type OperationLimit struct {
+	ID          int32          `json:"id"`
+	LimitName   string         `json:"limit_name"`
+	LimitValue  string         `json:"limit_value"`
+	Description sql.NullString `json:"description"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
 }

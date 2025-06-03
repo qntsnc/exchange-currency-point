@@ -17,6 +17,7 @@ type Querier interface {
 	GetCurrency(ctx context.Context, id int32) (Currency, error)
 	GetCurrencyByCode(ctx context.Context, code string) (Currency, error)
 	GetDailyClientForeignCurrencyVolume(ctx context.Context, arg GetDailyClientForeignCurrencyVolumeParams) (string, error)
+	GetOperationsForAnalytics(ctx context.Context, arg GetOperationsForAnalyticsParams) ([]GetOperationsForAnalyticsRow, error)
 	ListClients(ctx context.Context) ([]Client, error)
 	ListCurrencies(ctx context.Context) ([]Currency, error)
 	ListOperations(ctx context.Context, arg ListOperationsParams) ([]ListOperationsRow, error)

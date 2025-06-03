@@ -32,3 +32,12 @@ CREATE TABLE operations (
     receipt_reference VARCHAR(255) UNIQUE NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS operation_limits (
+    id SERIAL PRIMARY KEY,
+    limit_name VARCHAR(50) NOT NULL UNIQUE,
+    limit_value DECIMAL(15,4) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
