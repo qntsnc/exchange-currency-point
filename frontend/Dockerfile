@@ -12,18 +12,24 @@ RUN npm install
 # 3. Копируем остальной код приложения.
 COPY . ./
 
+# Устанавливаем переменную окружения для API URL
+ENV REACT_APP_API_URL=http://backend:8080/api/v1
+
 # 4. Собираем приложение (production build).
 RUN npm run build
 
-# Этап для сервировки статики с помощью Nginx
-FROM nginx:alpine
+# Этап для сервировки статики с помощью serve
+FROM node:18-alpine
 
-# Копируем собранные статические файлы из этапа 'build'
-COPY --from=build /app/build /usr/share/nginx/html
+WORKDIR /app
 
-# (Опционально) Копируем кастомную конфигурацию Nginx, если она нужна
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Устанавливаем serve глобально
+RUN npm install -g serve
 
-EXPOSE 80
+# Копируем собранные файлы из этапа сборки
+COPY --from=build /app/build /app
 
-CMD ["nginx", "-g", "daemon off;"]
+EXPOSE 3000
+
+# Запускаем serve
+CMD ["serve", "-s", "/app", "-l", "3000"]

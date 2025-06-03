@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import './AnalyticsPage.css';
 
 const AnalyticsPage = () => {
   const [loading, setLoading] = useState(false);
@@ -16,6 +17,7 @@ const AnalyticsPage = () => {
 
   const formatDecimal = (value) => (value === null || value === undefined ? 'N/A' : parseFloat(value).toFixed(2));
   const formatRate = (value) => (value === null || value === undefined ? 'N/A' : parseFloat(value).toFixed(4));
+  const formatCurrency = (value) => new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB' }).format(value);
 
   const fetchCurrencies = useCallback(async () => {
     try {
@@ -71,27 +73,72 @@ const AnalyticsPage = () => {
     fetchAnalytics();
   };
 
-  const SimpleBarChart = ({ title, data, labels, colors }) => {
+  const AnalyticsChart = ({ title, data, labels, colors, type = 'bar' }) => {
     const total = data.reduce((sum, val) => sum + val, 0);
+    
+    if (type === 'donut') {
+      return (
+        <div className="chart-container donut-chart">
+          <h4 className="chart-title">{title}</h4>
+          <div className="donut-wrapper">
+            <div className="donut">
+              {data.map((value, i) => {
+                const percentage = total > 0 ? (value / total) * 100 : 0;
+                return (
+                  <div
+                    key={i}
+                    className="donut-segment"
+                    style={{
+                      '--percentage': `${percentage}`,
+                      '--color': colors[i % colors.length],
+                      '--offset': data.slice(0, i).reduce((sum, val) => sum + (total > 0 ? (val / total) * 100 : 0), 0)
+                    }}
+                  />
+                );
+              })}
+            </div>
+            <div className="donut-center">
+              <span className="donut-total">{total}</span>
+              <span className="donut-label">Всего</span>
+            </div>
+          </div>
+          <div className="chart-legend">
+            {labels.map((label, i) => (
+              <div key={i} className="legend-item">
+                <div 
+                  className="legend-color" 
+                  style={{ backgroundColor: colors[i % colors.length] }}
+                />
+                <span className="legend-label">{label}</span>
+                <span className="legend-value">{data[i]} ({total > 0 ? ((data[i] / total) * 100).toFixed(1) : 0}%)</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
     return (
-      <div className="bar-chart">
-        <h4>{title}</h4>
-        <div className="bars-container">
+      <div className="chart-container bar-chart">
+        <h4 className="chart-title">{title}</h4>
+        <div className="bars-wrapper">
           {data.map((value, i) => {
             const percentage = total > 0 ? (value / total) * 100 : 0;
             return (
               <div key={i} className="bar-item">
-                <div
-                  className="bar-fill"
-                  style={{
-                    height: `${percentage}%`,
-                    backgroundColor: colors[i % colors.length],
-                    transition: 'height 0.5s ease-in-out',
-                  }}
-                >
-                  {percentage > 5 && <span>{value}</span>}
+                <div className="bar-label">{labels[i]}</div>
+                <div className="bar-track">
+                  <div
+                    className="bar-fill"
+                    style={{
+                      width: `${percentage}%`,
+                      backgroundColor: colors[i % colors.length],
+                    }}
+                  >
+                    <span className="bar-value">{value}</span>
+                  </div>
                 </div>
-                <div className="bar-label">{labels[i]} {percentage > 0 ? `(${percentage.toFixed(1)}%)` : ''}</div>
+                <div className="bar-percentage">{percentage.toFixed(1)}%</div>
               </div>
             );
           })}
@@ -101,176 +148,267 @@ const AnalyticsPage = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="card">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">
-          Аналитика операций
-        </h1>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              С даты:
-            </label>
-            <input
-              type="date"
-              name="startDate"
-              value={filters.startDate}
-              onChange={handleFilterChange}
-              className="input w-full"
-            />
+    <div className="main-content">
+      <div className="container">
+        <h1 className="page-title">📊 Аналитика операций</h1>
+        <p className="page-subtitle">
+          Детальная статистика и анализ операций обмена валют
+        </p>
+
+        {/* Фильтры */}
+        <div className="analytics-filters">
+          <h2 className="filters-title">🔍 Фильтры и настройки</h2>
+          
+          <div className="filters-grid">
+            <div className="filter-field">
+              <label>📅 Начальная дата</label>
+              <input
+                type="date"
+                name="startDate"
+                value={filters.startDate}
+                onChange={handleFilterChange}
+                className="filter-input"
+              />
+            </div>
+            
+            <div className="filter-field">
+              <label>📅 Конечная дата</label>
+              <input
+                type="date"
+                name="endDate"
+                value={filters.endDate}
+                onChange={handleFilterChange}
+                className="filter-input"
+              />
+            </div>
+            
+            <div className="filter-field">
+              <label>💱 Валюта</label>
+              <select
+                name="currency"
+                value={filters.currency}
+                onChange={handleFilterChange}
+                className="filter-select"
+              >
+                <option value="all">Все валюты</option>
+                {currencies.map(curr => (
+                  <option key={curr.id} value={curr.code}>
+                    {curr.code} - {curr.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="filter-field">
+              <label>🔄 Тип операции</label>
+              <select
+                name="operationType"
+                value={filters.operationType}
+                onChange={handleFilterChange}
+                className="filter-select"
+              >
+                <option value="all">Все типы</option>
+                <option value="buy">Покупка валюты</option>
+                <option value="sell">Продажа валюты</option>
+              </select>
+            </div>
           </div>
           
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              По дату:
-            </label>
-            <input
-              type="date"
-              name="endDate"
-              value={filters.endDate}
-              onChange={handleFilterChange}
-              className="input w-full"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Валюта:
-            </label>
-            <select
-              name="currency"
-              value={filters.currency}
-              onChange={handleFilterChange}
-              className="input w-full"
+          <div className="filters-actions">
+            <button
+              onClick={handleApplyFilters}
+              className="btn-apply-filters"
+              disabled={loading}
             >
-              <option value="all">Все валюты</option>
-              {currencies.map(curr => (
-                <option key={curr.id} value={curr.code}>{curr.code} ({curr.name})</option>
-              ))}
-            </select>
-          </div>
-          
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Тип операции:
-            </label>
-            <select
-              name="operationType"
-              value={filters.operationType}
-              onChange={handleFilterChange}
-              className="input w-full"
-            >
-              <option value="all">Все типы</option>
-              <option value="buy">Покупка</option>
-              <option value="sell">Продажа</option>
-            </select>
+              {loading ? (
+                <>
+                  <div className="loader"></div>
+                  Загрузка...
+                </>
+              ) : (
+                <>
+                  <span>🔍</span>
+                  Применить фильтры
+                </>
+              )}
+            </button>
           </div>
         </div>
-        
-        <div className="mt-6 flex justify-end">
-          <button
-            onClick={handleApplyFilters}
-            className="btn btn-primary"
-          >
-            Применить
-          </button>
-        </div>
-      </div>
 
-      {!loading && !analyticsData && !error && (
-        <div className="card text-center py-12">
-          <p className="text-gray-500">
-            Нажмите "Применить", чтобы загрузить аналитические данные.
-          </p>
-        </div>
-      )}
+        {/* Ошибка */}
+        {error && (
+          <div className="alert alert-error">
+            <span className="alert-icon">⚠️</span>
+            {error}
+          </div>
+        )}
 
-      {!loading && analyticsData && analyticsData.total_operations === 0 && (
-        <div className="card text-center py-12">
-          <p className="text-gray-500">
-            Нет данных для указанного периода и фильтров.
-          </p>
-        </div>
-      )}
+        {/* Пустое состояние */}
+        {!loading && !analyticsData && !error && (
+          <div className="empty-state">
+            <div className="empty-icon">📊</div>
+            <h3>Данные не загружены</h3>
+            <p>Настройте фильтры и нажмите "Применить фильтры" для загрузки аналитических данных</p>
+          </div>
+        )}
 
-      {!loading && analyticsData && analyticsData.total_operations > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Общая статистика
-            </h3>
-            <div className="summary-cards">
-              <div className="summary-card">
-                <h4>Всего операций</h4>
-                <p className="summary-value">{analyticsData.total_operations}</p>
-              </div>
-              <div className="summary-card">
-                <h4>Общий объем в рублях</h4>
-                <p className="summary-value">{formatDecimal(analyticsData.total_amount_rub)} ₽</p>
-              </div>
-              <div className="summary-card">
-                <h4>Продажи валюты</h4>
-                <p className="summary-value">
-                  {analyticsData.client_sells_count} операций / {formatDecimal(analyticsData.client_sells_rub_total)} ₽
-                </p>
-              </div>
-              <div className="summary-card">
-                <h4>Покупки валюты</h4>
-                <p className="summary-value">
-                  {analyticsData.client_buys_count} операций / {formatDecimal(analyticsData.client_buys_rub_total)} ₽
-                </p>
-              </div>
-              {Object.entries(analyticsData.average_rates).map(([currency, rate]) => (
-                <div key={`rate-${currency}`} className="summary-card">
-                  <h4>Средний курс {currency}</h4>
-                  <p className="summary-value">{formatRate(rate)}</p>
+        {/* Нет данных */}
+        {!loading && analyticsData && analyticsData.total_operations === 0 && (
+          <div className="empty-state">
+            <div className="empty-icon">📭</div>
+            <h3>Нет данных</h3>
+            <p>За выбранный период и с указанными фильтрами операций не найдено</p>
+          </div>
+        )}
+
+        {/* Основные данные */}
+        {!loading && analyticsData && analyticsData.total_operations > 0 && (
+          <div className="analytics-content">
+            {/* Основная статистика */}
+            <div className="analytics-overview">
+              <h2 className="section-title">📈 Общая статистика</h2>
+              
+              <div className="stats-grid">
+                <div className="stat-card primary">
+                  <div className="stat-icon">📊</div>
+                  <div className="stat-content">
+                    <div className="stat-value">{analyticsData.total_operations}</div>
+                    <div className="stat-label">Всего операций</div>
+                  </div>
                 </div>
-              ))}
+                
+                <div className="stat-card success">
+                  <div className="stat-icon">💰</div>
+                  <div className="stat-content">
+                    <div className="stat-value">{formatCurrency(analyticsData.total_amount_rub)}</div>
+                    <div className="stat-label">Общий оборот</div>
+                  </div>
+                </div>
+                
+                <div className="stat-card warning">
+                  <div className="stat-icon">📤</div>
+                  <div className="stat-content">
+                    <div className="stat-value">{analyticsData.client_sells_count}</div>
+                    <div className="stat-label">Продаж клиентами</div>
+                    <div className="stat-sublabel">{formatCurrency(analyticsData.client_sells_rub_total)}</div>
+                  </div>
+                </div>
+                
+                <div className="stat-card info">
+                  <div className="stat-icon">📥</div>
+                  <div className="stat-content">
+                    <div className="stat-value">{analyticsData.client_buys_count}</div>
+                    <div className="stat-label">Покупок клиентами</div>
+                    <div className="stat-sublabel">{formatCurrency(analyticsData.client_buys_rub_total)}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Графики и детальная статистика */}
+            <div className="analytics-details">
+              <div className="analytics-row">
+                {/* Распределение операций */}
+                <div className="analytics-card">
+                  <AnalyticsChart
+                    title="Распределение операций"
+                    data={[analyticsData.client_sells_count, analyticsData.client_buys_count]}
+                    labels={['Продажи клиентов', 'Покупки клиентов']}
+                    colors={['#ef4444', '#3b82f6']}
+                    type="donut"
+                  />
+                </div>
+
+                {/* Популярные валюты */}
+                <div className="analytics-card">
+                  <h3 className="card-title">💎 Популярные валюты</h3>
+                  <div className="currency-list">
+                    {analyticsData.currency_volumes.slice(0, 5).map((cv, index) => (
+                      <div key={index} className="currency-item">
+                        <div className="currency-info">
+                          <div className="currency-code">{cv.currency_code}</div>
+                          <div className="currency-name">{cv.currency_name}</div>
+                        </div>
+                        <div className="currency-stats">
+                          <div className="currency-volume">{formatDecimal(cv.volume)}</div>
+                          <div className="currency-rub">{formatCurrency(cv.rub_volume)}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Средние курсы */}
+              {Object.keys(analyticsData.average_rates).length > 0 && (
+                <div className="analytics-card full-width">
+                  <h3 className="card-title">💹 Средние курсы за период</h3>
+                  <div className="rates-grid">
+                    {Object.entries(analyticsData.average_rates).map(([currency, rate]) => (
+                      <div key={currency} className="rate-card">
+                        <div className="rate-currency">{currency}</div>
+                        <div className="rate-value">{formatRate(rate)} ₽</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Подробная таблица валют */}
+              {analyticsData.currency_volumes.length > 0 && (
+                <div className="analytics-card full-width">
+                  <h3 className="card-title">📋 Детальная статистика по валютам</h3>
+                  <div className="table-container">
+                    <table className="analytics-table">
+                      <thead>
+                        <tr>
+                          <th>Валюта</th>
+                          <th>Код</th>
+                          <th>Объем в валюте</th>
+                          <th>Объем в рублях</th>
+                          <th>Доля от общего оборота</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {analyticsData.currency_volumes.map((cv, index) => {
+                          const percentage = (cv.rub_volume / analyticsData.total_amount_rub * 100).toFixed(1);
+                          return (
+                            <tr key={index}>
+                              <td>
+                                <div className="table-currency-name">{cv.currency_name}</div>
+                              </td>
+                              <td>
+                                <div className="table-currency-code">{cv.currency_code}</div>
+                              </td>
+                              <td>
+                                <div className="table-volume">{formatDecimal(cv.volume)}</div>
+                              </td>
+                              <td>
+                                <div className="table-rub-volume">{formatCurrency(cv.rub_volume)}</div>
+                              </td>
+                              <td>
+                                <div className="table-percentage">
+                                  <div className="percentage-bar">
+                                    <div 
+                                      className="percentage-fill" 
+                                      style={{ width: `${percentage}%` }}
+                                    />
+                                  </div>
+                                  <span>{percentage}%</span>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-          
-          <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              График операций
-            </h3>
-            <SimpleBarChart
-              title="Распределение типов операций"
-              data={[analyticsData.client_sells_count, analyticsData.client_buys_count]}
-              labels={['Клиент продает валюту', 'Клиент покупает валюту']}
-              colors={['#4caf50', '#2196f3']}
-            />
-          </div>
-          
-          <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Популярные валюты
-            </h3>
-            <div className="currency-volumes">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Валюта</th>
-                    <th>Код</th>
-                    <th>Объем в валюте</th>
-                    <th>Объем в рублях</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {analyticsData.currency_volumes.map((cv, index) => (
-                    <tr key={index}>
-                      <td>{cv.currency_name}</td>
-                      <td>{cv.currency_code}</td>
-                      <td>{formatDecimal(cv.volume)}</td>
-                      <td>{formatDecimal(cv.rub_volume)} ₽</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

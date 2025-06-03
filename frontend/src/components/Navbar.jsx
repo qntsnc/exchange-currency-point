@@ -13,14 +13,17 @@ const Navbar = () => {
               <span className="text-xl font-bold text-primary">Exchange Point</span>
             </Link>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              <Link to="/" className="text-gray-900 hover:text-primary px-3 py-2 rounded-md text-sm font-medium">
-                Главная
+              <Link to="/clients" className="text-gray-900 hover:text-primary px-3 py-2 rounded-md text-sm font-medium">
+                Клиенты
               </Link>
-              <Link to="/exchange" className="text-gray-900 hover:text-primary px-3 py-2 rounded-md text-sm font-medium">
-                Обмен
+              <Link to="/currencies" className="text-gray-900 hover:text-primary px-3 py-2 rounded-md text-sm font-medium">
+                Валюты
               </Link>
-              <Link to="/rates" className="text-gray-900 hover:text-primary px-3 py-2 rounded-md text-sm font-medium">
-                Курсы
+              <Link to="/operations" className="text-gray-900 hover:text-primary px-3 py-2 rounded-md text-sm font-medium">
+                Операции
+              </Link>
+              <Link to="/analytics" className="text-gray-900 hover:text-primary px-3 py-2 rounded-md text-sm font-medium">
+                Аналитика
               </Link>
             </div>
           </div>
@@ -51,14 +54,17 @@ const Navbar = () => {
       {isOpen && (
         <div className="sm:hidden">
           <div className="pt-2 pb-3 space-y-1">
-            <Link to="/" className="block px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-50">
-              Главная
+            <Link to="/clients" className="block px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-50">
+              Клиенты
             </Link>
-            <Link to="/exchange" className="block px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-50">
-              Обмен
+            <Link to="/currencies" className="block px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-50">
+              Валюты
             </Link>
-            <Link to="/rates" className="block px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-50">
-              Курсы
+            <Link to="/operations" className="block px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-50">
+              Операции
+            </Link>
+            <Link to="/analytics" className="block px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-50">
+              Аналитика
             </Link>
             <div className="px-3 py-2">
               <button className="w-full btn btn-primary">
