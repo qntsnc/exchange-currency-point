@@ -1,31 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Navbar from './Navbar';
-import './Layout.css';
 
 const Layout = ({ children }) => {
-  const [currentTime, setCurrentTime] = useState(new Date());
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
   return (
-    <>
+    <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="main-content container" style={{ animation: 'fadeIn 0.5s ease-in' }}>
-        {children}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-6">
+          {children}
+        </div>
       </main>
-      <footer className="footer">
-        <p>
-          &copy; {currentTime.getFullYear()} Обменный Пункт. Пользователь: qntsnc. Время UTC:{' '}
-          {currentTime.toISOString().replace('T', ' ').slice(0, 19)}
-        </p>
+      <footer className="bg-white mt-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="text-center text-gray-500 text-sm">
+            © {new Date().getFullYear()} Exchange Point. Все права защищены.
+          </div>
+        </div>
       </footer>
-    </>
+    </div>
   );
 };
 

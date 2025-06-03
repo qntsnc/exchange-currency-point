@@ -1,0 +1,259 @@
+/* === Современный минималистичный стиль для страницы валют === */
+
+:root {
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --danger: #ef4444;
+  --danger-hover: #b91c1c;
+  --success: #10b981;
+  --success-hover: #047857;
+  --bg: #f8fafc;
+  --card-bg: #fff;
+  --border: #e5e7eb;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --shadow: 0 4px 24px 0 rgba(30,41,59,0.07);
+  --radius: 14px;
+  --transition: 0.18s cubic-bezier(.4,0,.2,1);
+}
+
+.currencies-page {
+  padding: 48px 0 32px 0;
+  background: var(--bg);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 0;
+}
+.tab {
+  padding: 14px 36px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius) var(--radius) 0 0;
+  font-size: 1.13rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--transition), background var(--transition);
+  position: relative;
+  outline: none;
+}
+.tab.active {
+  color: var(--accent);
+  background: var(--card-bg);
+  box-shadow: 0 2px 12px 0 rgba(30,41,59,0.04);
+  z-index: 2;
+}
+.tab.active::after {
+  content: '';
+  display: block;
+  position: absolute;
+  left: 24px; right: 24px; bottom: 0;
+  height: 3px;
+  border-radius: 2px 2px 0 0;
+  background: var(--accent);
+  animation: fadeIn .3s;
+}
+
+.tab-content {
+  width: 100%;
+  max-width: 700px;
+  background: var(--card-bg);
+  border-radius: 0 0 var(--radius) var(--radius);
+  box-shadow: var(--shadow);
+  padding: 40px 32px 32px 32px;
+  margin-bottom: 32px;
+  margin-top: -2px;
+  animation: fadeIn .5s;
+  border: 1px solid var(--border);
+  border-top: none;
+}
+
+h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 28px;
+  margin-top: 0;
+}
+
+/* Форма */
+.currency-form {
+  background: var(--bg);
+  border-radius: var(--radius);
+  box-shadow: none;
+  padding: 24px 18px 18px 18px;
+  margin-bottom: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  border: 1px solid var(--border);
+}
+.currency-form-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-bottom: 0;
+}
+.currency-input {
+  padding: 13px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 1.08rem;
+  background: var(--card-bg);
+  color: var(--text-main);
+  transition: border-color var(--transition), box-shadow var(--transition);
+  min-width: 170px;
+  outline: none;
+  box-shadow: none;
+}
+.currency-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px #dbeafe;
+}
+.limit-input {
+  width: 120px;
+}
+
+/* Кнопки */
+.btn {
+  padding: 12px 28px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.08rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-right: 10px;
+  transition: background var(--transition), box-shadow var(--transition), color var(--transition), transform var(--transition);
+  box-shadow: 0 2px 8px rgba(30,41,59,0.04);
+  outline: none;
+  position: relative;
+}
+.btn:last-child {
+  margin-right: 0;
+}
+.btn-success {
+  background: var(--success);
+  color: #fff;
+}
+.btn-success:hover, .btn-success:focus {
+  background: var(--success-hover);
+  transform: translateY(-2px) scale(1.03);
+}
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+}
+.btn-danger:hover, .btn-danger:focus {
+  background: var(--danger-hover);
+  transform: translateY(-2px) scale(1.03);
+}
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+.btn-primary:hover, .btn-primary:focus {
+  background: var(--accent-hover);
+  transform: translateY(-2px) scale(1.03);
+}
+.btn-sm {
+  padding: 8px 18px;
+  font-size: 1rem;
+}
+
+/* Таблица */
+.currencies-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-top: 18px;
+  background: var(--card-bg);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  font-size: 1.07rem;
+}
+.currencies-table th, .currencies-table td {
+  border: none;
+  padding: 18px 16px;
+  text-align: left;
+  vertical-align: middle;
+  font-size: 1.07rem;
+  background: transparent;
+}
+.currencies-table th {
+  background: #f1f5f9;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-size: 0.98rem;
+  letter-spacing: 0.04em;
+  border-bottom: 1.5px solid var(--border);
+}
+.currencies-table tr:not(:last-child) td {
+  border-bottom: 1px solid var(--border);
+}
+.currencies-table tr {
+  transition: background var(--transition);
+}
+.currencies-table tr:hover {
+  background: #f3f6fb;
+}
+
+/* Сообщения */
+.error-message {
+  color: var(--danger);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  padding: 13px 18px;
+  border-radius: 8px;
+  margin-bottom: 18px;
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+
+/* Адаптивность */
+@media (max-width: 900px) {
+  .tab-content {
+    padding: 18px 4px;
+    max-width: 98vw;
+  }
+  .currency-form-fields {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .currencies-table th, .currencies-table td {
+    padding: 10px 6px;
+    font-size: 0.99rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .currencies-page {
+    padding: 8px 0;
+  }
+  .tab-content {
+    padding: 6px 0;
+  }
+  .currency-form {
+    padding: 6px 2px;
+  }
+  .currency-input {
+    min-width: 90px;
+    font-size: 0.97rem;
+  }
+  h2 {
+    font-size: 1.3rem;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+} 

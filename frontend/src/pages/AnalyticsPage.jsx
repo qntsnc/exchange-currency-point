@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { format } from 'date-fns';
+import { ru } from 'date-fns/locale';
 
 const AnalyticsPage = () => {
   const [loading, setLoading] = useState(false);
@@ -6,10 +8,10 @@ const AnalyticsPage = () => {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [currencies, setCurrencies] = useState([]);
   const [filters, setFilters] = useState({
-    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0],
-    currencyCode: '',
-    operationType: ''
+    startDate: format(new Date(), 'yyyy-MM-dd'),
+    endDate: format(new Date(), 'yyyy-MM-dd'),
+    currency: 'all',
+    operationType: 'all'
   });
 
   const formatDecimal = (value) => (value === null || value === undefined ? 'N/A' : parseFloat(value).toFixed(2));
@@ -34,8 +36,8 @@ const AnalyticsPage = () => {
       const url = new URL('http://localhost:8080/api/v1/analytics/operations');
       url.searchParams.append('start_date', filters.startDate);
       url.searchParams.append('end_date', filters.endDate);
-      if (filters.currencyCode) url.searchParams.append('currency_code', filters.currencyCode);
-      if (filters.operationType) url.searchParams.append('operation_type', filters.operationType);
+      if (filters.currency !== 'all' && filters.currency) url.searchParams.append('currency_code', filters.currency);
+      if (filters.operationType !== 'all' && filters.operationType) url.searchParams.append('operation_type', filters.operationType);
 
       const response = await fetch(url.toString());
       if (!response.ok) {
@@ -59,7 +61,10 @@ const AnalyticsPage = () => {
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value }));
+    setFilters(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleApplyFilters = () => {
@@ -96,57 +101,105 @@ const AnalyticsPage = () => {
   };
 
   return (
-    <div className="analytics-page">
-      <h2>Аналитика операций</h2>
-      {error && <p className="error-message">{error}</p>}
-
-      <div className="analytics-filters">
-        <div>
-          <label htmlFor="startDate">С даты:</label>
-          <input type="date" id="startDate" name="startDate" value={filters.startDate} onChange={handleFilterChange} />
+    <div className="space-y-6">
+      <div className="card">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">
+          Аналитика операций
+        </h1>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              С даты:
+            </label>
+            <input
+              type="date"
+              name="startDate"
+              value={filters.startDate}
+              onChange={handleFilterChange}
+              className="input w-full"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              По дату:
+            </label>
+            <input
+              type="date"
+              name="endDate"
+              value={filters.endDate}
+              onChange={handleFilterChange}
+              className="input w-full"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Валюта:
+            </label>
+            <select
+              name="currency"
+              value={filters.currency}
+              onChange={handleFilterChange}
+              className="input w-full"
+            >
+              <option value="all">Все валюты</option>
+              {currencies.map(curr => (
+                <option key={curr.id} value={curr.code}>{curr.code} ({curr.name})</option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Тип операции:
+            </label>
+            <select
+              name="operationType"
+              value={filters.operationType}
+              onChange={handleFilterChange}
+              className="input w-full"
+            >
+              <option value="all">Все типы</option>
+              <option value="buy">Покупка</option>
+              <option value="sell">Продажа</option>
+            </select>
+          </div>
         </div>
-        <div>
-          <label htmlFor="endDate">По дату:</label>
-          <input type="date" id="endDate" name="endDate" value={filters.endDate} onChange={handleFilterChange} />
+        
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={handleApplyFilters}
+            className="btn btn-primary"
+          >
+            Применить
+          </button>
         </div>
-        <div>
-          <label htmlFor="currencyCode">Валюта:</label>
-          <select id="currencyCode" name="currencyCode" value={filters.currencyCode} onChange={handleFilterChange}>
-            <option value="">Все валюты</option>
-            {currencies.map(curr => (
-              <option key={curr.id} value={curr.code}>{curr.code} ({curr.name})</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="operationType">Тип операции:</label>
-          <select id="operationType" name="operationType" value={filters.operationType} onChange={handleFilterChange}>
-            <option value="">Все типы</option>
-            <option value="CLIENT_SELLS_TO_EXCHANGE">Клиент продаёт валюту</option>
-            <option value="CLIENT_BUYS_FROM_EXCHANGE">Клиент покупает валюту</option>
-          </select>
-        </div>
-        <button onClick={handleApplyFilters}>Применить</button>
       </div>
 
-        {loading && <p className="loading-message">Загрузка данных...</p>}
-
-        {!loading && !analyticsData && !error && (
-          <div style={{width: 'full', height:'full'}}  className="no-data-message">
-            <p>Нажмите "Применить", чтобы загрузить аналитические данные.</p>
-          </div>
+      {!loading && !analyticsData && !error && (
+        <div className="card text-center py-12">
+          <p className="text-gray-500">
+            Нажмите "Применить", чтобы загрузить аналитические данные.
+          </p>
+        </div>
       )}
 
       {!loading && analyticsData && analyticsData.total_operations === 0 && (
-        <div className="no-data-message">
-          <p>Нет данных для указанного периода и фильтров.</p>
+        <div className="card text-center py-12">
+          <p className="text-gray-500">
+            Нет данных для указанного периода и фильтров.
+          </p>
         </div>
       )}
 
       {!loading && analyticsData && analyticsData.total_operations > 0 && (
-        <div className="analytics-container">
-          <div className="summary-section">
-            <h3>Сводная информация</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="card">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Общая статистика
+            </h3>
             <div className="summary-cards">
               <div className="summary-card">
                 <h4>Всего операций</h4>
@@ -176,9 +229,11 @@ const AnalyticsPage = () => {
               ))}
             </div>
           </div>
-
-          <div className="chart-section">
-            <h3>Типы операций</h3>
+          
+          <div className="card">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              График операций
+            </h3>
             <SimpleBarChart
               title="Распределение типов операций"
               data={[analyticsData.client_sells_count, analyticsData.client_buys_count]}
@@ -186,55 +241,33 @@ const AnalyticsPage = () => {
               colors={['#4caf50', '#2196f3']}
             />
           </div>
-
-          <div className="currency-volumes">
-            <h3>Объемы по валютам</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>Валюта</th>
-                  <th>Код</th>
-                  <th>Объем в валюте</th>
-                  <th>Объем в рублях</th>
-                </tr>
-              </thead>
-              <tbody>
-                {analyticsData.currency_volumes.map((cv, index) => (
-                  <tr key={index}>
-                    <td>{cv.currency_name}</td>
-                    <td>{cv.currency_code}</td>
-                    <td>{formatDecimal(cv.volume)}</td>
-                    <td>{formatDecimal(cv.rub_volume)} ₽</td>
+          
+          <div className="card">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Популярные валюты
+            </h3>
+            <div className="currency-volumes">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Валюта</th>
+                    <th>Код</th>
+                    <th>Объем в валюте</th>
+                    <th>Объем в рублях</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="daily-breakdown">
-            <h3>Детализация по дням</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>Дата</th>
-                  <th>Количество операций</th>
-                  <th>Объем (руб)</th>
-                  <th>Продажи клиентов</th>
-                  <th>Покупки клиентов</th>
-                </tr>
-              </thead>
-              <tbody>
-                {analyticsData.daily_operations.map((day, index) => (
-                  <tr key={index}>
-                    <td>{day.date}</td>
-                    <td>{day.count}</td>
-                    <td>{formatDecimal(day.amount_rub)} ₽</td>
-                    <td>{day.client_sells_count} (объем: {formatDecimal(day.client_sells_volume)})</td>
-                    <td>{day.client_buys_count} (объем: {formatDecimal(day.client_buys_volume)})</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {analyticsData.currency_volumes.map((cv, index) => (
+                    <tr key={index}>
+                      <td>{cv.currency_name}</td>
+                      <td>{cv.currency_code}</td>
+                      <td>{formatDecimal(cv.volume)}</td>
+                      <td>{formatDecimal(cv.rub_volume)} ₽</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

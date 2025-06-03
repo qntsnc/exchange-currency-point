@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { format, parseISO, isValid } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import './CurrenciesPage.css';
 
 const CurrenciesPage = () => {
   const [currencies, setCurrencies] = useState([]);
@@ -178,54 +179,31 @@ const CurrenciesPage = () => {
     return descriptions[limitName] || limitName;
   };
 
-  const tabStyle = {
-    padding: '10px 20px',
-    marginRight: '10px',
-    backgroundColor: '#f0f0f0',
-    border: '1px solid #ddd',
-    borderBottom: 'none',
-    cursor: 'pointer',
-    borderRadius: '5px 5px 0 0'
-  };
-
-  const activeTabStyle = {
-    ...tabStyle,
-    backgroundColor: '#fff',
-    borderBottom: '1px solid #fff',
-    fontWeight: 'bold'
-  };
-
-  const contentStyle = {
-    border: '1px solid #ddd',
-    padding: '20px',
-    borderRadius: '0 5px 5px 5px'
-  };
-
   return (
-    <div>
-      <div style={{ display: 'flex', marginBottom: '-1px' }}>
+    <div className="currencies-page">
+      <div className="tabs">
         <div 
-          style={activeTab === 'currencies' ? activeTabStyle : tabStyle}
+          className={activeTab === 'currencies' ? 'tab active' : 'tab'}
           onClick={() => setActiveTab('currencies')}
         >
           Валюты и курсы
         </div>
         <div 
-          style={activeTab === 'limits' ? activeTabStyle : tabStyle}
+          className={activeTab === 'limits' ? 'tab active' : 'tab'}
           onClick={() => setActiveTab('limits')}
         >
           Ограничения операций
         </div>
       </div>
 
-      <div style={contentStyle}>
+      <div className="tab-content">
         {activeTab === 'currencies' && (
           <>
             <h2>Валюты и курсы</h2>
-            {error && <p className="error-message" style={{ color: 'red' }}>{error}</p>}
+            {error && <p className="error-message">{error}</p>}
             
-            <form onSubmit={editCurrency ? handleUpdateCurrency : handleCreateCurrency} style={{ marginBottom: '20px' }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
+            <form onSubmit={editCurrency ? handleUpdateCurrency : handleCreateCurrency} className="currency-form">
+              <div className="currency-form-fields">
                 <input 
                   value={editCurrency ? editCurrency.code : newCurrency.code} 
                   onChange={(e) => editCurrency 
@@ -235,7 +213,7 @@ const CurrenciesPage = () => {
                   placeholder="Код валюты" 
                   required 
                   disabled={editCurrency !== null}
-                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }} 
+                  className="currency-input"
                 />
                 
                 <input 
@@ -247,7 +225,7 @@ const CurrenciesPage = () => {
                   placeholder="Наименование" 
                   required 
                   disabled={editCurrency !== null}
-                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }} 
+                  className="currency-input"
                 />
                 
                 <input 
@@ -260,7 +238,7 @@ const CurrenciesPage = () => {
                   } 
                   placeholder="Курс покупки" 
                   required
-                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }} 
+                  className="currency-input"
                 />
                 
                 <input 
@@ -273,81 +251,53 @@ const CurrenciesPage = () => {
                   } 
                   placeholder="Курс продажи" 
                   required
-                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }} 
+                  className="currency-input"
                 />
               </div>
-              
               <div>
                 <button 
                   type="submit" 
                   disabled={loading}
-                  style={{ 
-                    padding: '8px 16px', 
-                    backgroundColor: '#4CAF50', 
-                    color: 'white', 
-                    border: 'none', 
-                    borderRadius: '4px', 
-                    cursor: loading ? 'not-allowed' : 'pointer',
-                    marginRight: '10px'
-                  }}
+                  className="btn btn-success"
                 >
                   {editCurrency ? 'Обновить валюту' : 'Добавить валюту'}
                 </button>
-                
                 {editCurrency && (
                   <button 
                     type="button" 
                     onClick={() => setEditCurrency(null)}
-                    style={{ 
-                      padding: '8px 16px', 
-                      backgroundColor: '#f44336', 
-                      color: 'white', 
-                      border: 'none', 
-                      borderRadius: '4px', 
-                      cursor: 'pointer' 
-                    }}
+                    className="btn btn-danger"
                   >
                     Отмена
                   </button>
                 )}
               </div>
             </form>
-            
             {loading && <p>Загрузка валют...</p>}
-            
             {!loading && currencies.length > 0 && (
-              <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
+              <table className="currencies-table">
                 <thead>
-                  <tr style={{ backgroundColor: '#f0f0f0' }}>
-                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Код</th>
-                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Наименование</th>
-                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Курс покупки</th>
-                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Курс продажи</th>
-                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Последнее обновление</th>
-                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Действия</th>
+                  <tr>
+                    <th>Код</th>
+                    <th>Наименование</th>
+                    <th>Курс покупки</th>
+                    <th>Курс продажи</th>
+                    <th>Последнее обновление</th>
+                    <th>Действия</th>
                   </tr>
                 </thead>
                 <tbody>
                   {currencies.map(currency => (
-                    <tr key={currency.id} style={{ border: '1px solid #ddd' }}>
-                      <td style={{ border: '1px solid #ddd', padding: '8px' }}>{currency.code}</td>
-                      <td style={{ border: '1px solid #ddd', padding: '8px' }}>{currency.name}</td>
-                      <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatRate(currency.buy_rate)}</td>
-                      <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatRate(currency.sell_rate)}</td>
-                      <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-                        {formatDate(currency.last_rate_update_at)}
-                      </td>
-                      <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                    <tr key={currency.id}>
+                      <td>{currency.code}</td>
+                      <td>{currency.name}</td>
+                      <td>{formatRate(currency.buy_rate)}</td>
+                      <td>{formatRate(currency.sell_rate)}</td>
+                      <td>{formatDate(currency.last_rate_update_at)}</td>
+                      <td>
                         <button 
                           onClick={() => setEditCurrency({ ...currency })}
-                          style={{ 
-                            padding: '5px 10px', 
-                            backgroundColor: '#2196F3', 
-                            color: 'white', 
-                            border: 'none', 
-                            borderRadius: '4px', 
-                            cursor: 'pointer' 
-                          }}
+                          className="btn btn-primary btn-sm"
                         >
                           Редактировать
                         </button>
@@ -357,70 +307,53 @@ const CurrenciesPage = () => {
                 </tbody>
               </table>
             )}
-            
             {!loading && currencies.length === 0 && <p>Нет данных о валютах.</p>}
           </>
         )}
-
         {activeTab === 'limits' && (
           <>
             <h2>Ограничения операций</h2>
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
+            <table className="currencies-table">
               <thead>
-                <tr style={{ backgroundColor: '#f0f0f0' }}>
-                  <th style={{ border: '1px solid #ddd', padding: '8px' }}>Название</th>
-                  <th style={{ border: '1px solid #ddd', padding: '8px' }}>Описание</th>
-                  <th style={{ border: '1px solid #ddd', padding: '8px' }}>Значение</th>
-                  <th style={{ border: '1px solid #ddd', padding: '8px' }}>Последнее обновление</th>
-                  <th style={{ border: '1px solid #ddd', padding: '8px' }}>Действия</th>
+                <tr>
+                  <th>Название</th>
+                  <th>Описание</th>
+                  <th>Значение</th>
+                  <th>Последнее обновление</th>
+                  <th>Действия</th>
                 </tr>
               </thead>
               <tbody>
                 {operationLimits.map(limit => (
-                  <tr key={limit.id} style={{ border: '1px solid #ddd' }}>
-                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{limit.limit_name}</td>
-                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{limit.description}</td>
-                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                  <tr key={limit.id}>
+                    <td>{limit.limit_name}</td>
+                    <td>{limit.description}</td>
+                    <td>
                       {editingLimit && editingLimit.id === limit.id ? (
                         <input 
                           type="number" 
                           step="0.0001" 
                           value={editingLimit.limit_value}
                           onChange={(e) => setEditingLimit({...editingLimit, limit_value: e.target.value})}
-                          style={{ width: '100px', padding: '5px' }}
+                          className="currency-input limit-input"
                         />
                       ) : (
                         formatRate(limit.limit_value)
                       )}
                     </td>
-                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatDate(limit.updated_at)}</td>
-                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                    <td>{formatDate(limit.updated_at)}</td>
+                    <td>
                       {editingLimit && editingLimit.id === limit.id ? (
                         <>
                           <button 
                             onClick={handleUpdateLimit}
-                            style={{ 
-                              padding: '5px 10px', 
-                              backgroundColor: '#4CAF50', 
-                              color: 'white', 
-                              border: 'none', 
-                              borderRadius: '4px', 
-                              cursor: 'pointer',
-                              marginRight: '5px'
-                            }}
+                            className="btn btn-success btn-sm"
                           >
                             Сохранить
                           </button>
                           <button 
                             onClick={() => setEditingLimit(null)}
-                            style={{ 
-                              padding: '5px 10px', 
-                              backgroundColor: '#f44336', 
-                              color: 'white', 
-                              border: 'none', 
-                              borderRadius: '4px', 
-                              cursor: 'pointer' 
-                            }}
+                            className="btn btn-danger btn-sm"
                           >
                             Отмена
                           </button>
@@ -428,14 +361,7 @@ const CurrenciesPage = () => {
                       ) : (
                         <button 
                           onClick={() => setEditingLimit({ ...limit })}
-                          style={{ 
-                            padding: '5px 10px', 
-                            backgroundColor: '#2196F3', 
-                            color: 'white', 
-                            border: 'none', 
-                            borderRadius: '4px', 
-                            cursor: 'pointer' 
-                          }}
+                          className="btn btn-primary btn-sm"
                         >
                           Редактировать
                         </button>
