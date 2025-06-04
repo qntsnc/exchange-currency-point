@@ -28,9 +28,6 @@ const Navbar = () => {
             </div>
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
-            <button className="btn btn-primary">
-              Войти
-            </button>
           </div>
           <div className="flex items-center sm:hidden">
             <button
@@ -67,9 +64,7 @@ const Navbar = () => {
               Аналитика
             </Link>
             <div className="px-3 py-2">
-              <button className="w-full btn btn-primary">
-                Войти
-              </button>
+
             </div>
           </div>
         </div>
