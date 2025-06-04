@@ -55,8 +55,8 @@ const CurrenciesPage = () => {
       const payload = {
         code: newCurrency.code,
         name: newCurrency.name,
-        buy_rate: buyRate.toFixed(8),
-        sell_rate: sellRate.toFixed(8),
+        buy_rate: Number(buyRate.toFixed(8)),
+        sell_rate: Number(sellRate.toFixed(8)),
       };
 
       const response = await fetch('http://localhost:8080/api/v1/currencies', {
