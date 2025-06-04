@@ -1,0 +1,526 @@
+/* Основное содержимое */
+.main-content {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2rem 0;
+  position: relative;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* Заголовок страницы */
+.page-title {
+  text-align: center;
+  font-size: 2.5rem;
+  color: white;
+  margin-bottom: 2rem;
+  font-weight: 300;
+  letter-spacing: 2px;
+}
+
+/* Форма добавления операции */
+.operation-form-section {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  backdrop-filter: blur(10px);
+}
+
+.section-title {
+  color: white;
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  font-weight: 300;
+  text-align: center;
+}
+
+.operation-form {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-field label {
+  color: white;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.form-input,
+.form-select {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 0.8rem;
+  color: white;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.form-input:focus,
+.form-select:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.form-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.form-select option {
+  background: #333;
+  color: white;
+}
+
+/* Информация о лимитах */
+.limits-info {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.limits-title {
+  color: white;
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+.limits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.limit-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.limit-icon {
+  font-size: 1.2rem;
+  width: 30px;
+  text-align: center;
+}
+
+.limit-content {
+  flex: 1;
+}
+
+.limit-label {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 0.3rem;
+  font-weight: 500;
+}
+
+.limit-value {
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  color: white;
+  padding: 0.8rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Сетка карточек операций - заменяем на таблицу */
+.operations-table-container {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
+  padding: 1.5rem;
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.operations-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.operations-table thead th {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  padding: 1rem 0.8rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(5px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.operations-table thead th:first-child {
+  border-top-left-radius: 10px;
+}
+
+.operations-table thead th:last-child {
+  border-top-right-radius: 10px;
+}
+
+.operation-row {
+  transition: all 0.3s ease;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.operation-row:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: scale(1.005);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.operation-row td {
+  padding: 1rem 0.8rem;
+  vertical-align: middle;
+  color: white;
+  font-size: 0.9rem;
+}
+
+.id-cell {
+  text-align: center;
+}
+
+.operation-id {
+  font-family: monospace;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+}
+
+.type-cell {
+  text-align: center;
+}
+
+.operation-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.operation-type.sell {
+  background: rgba(244, 67, 54, 0.2);
+  border: 1px solid rgba(244, 67, 54, 0.3);
+  color: #f44336;
+}
+
+.operation-type.buy {
+  background: rgba(76, 175, 80, 0.2);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  color: #4CAF50;
+}
+
+.type-icon {
+  font-size: 1rem;
+}
+
+.client-cell {
+  text-align: center;
+}
+
+.client-name {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+.currency-cell {
+  text-align: center;
+}
+
+.currency-badge {
+  background: rgba(33, 150, 243, 0.2);
+  color: #2196F3;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  font-family: monospace;
+  font-weight: 700;
+  border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+.amount-cell,
+.rub-amount-cell,
+.rate-cell {
+  text-align: center;
+}
+
+.currency-amount,
+.effective-rate {
+  font-family: monospace;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.rub-amount {
+  color: #4CAF50;
+  font-family: monospace;
+  font-weight: 700;
+}
+
+.date-cell {
+  text-align: center;
+}
+
+.operation-date {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.85rem;
+}
+
+.actions-cell {
+  text-align: center;
+}
+
+.btn-receipt {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  color: white;
+  padding: 0.5rem 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.8rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+.btn-receipt:hover {
+  background: rgba(33, 150, 243, 0.3);
+  border-color: rgba(33, 150, 243, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(33, 150, 243, 0.2);
+}
+
+/* Удаляем старые стили карточек */
+.operations-grid,
+.operation-card,
+.operation-header,
+.operation-details,
+.detail-row,
+.detail-icon,
+.detail-content,
+.detail-label,
+.detail-value,
+.operation-actions,
+.currency-code {
+  display: none !important;
+}
+
+/* Пагинация */
+.pagination-section {
+  display: flex;
+  justify-content: center;
+  padding: 2rem 0;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  backdrop-filter: blur(10px);
+}
+
+.pagination-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  color: white;
+  padding: 0.6rem 1.2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-info {
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* Состояния */
+.loading-state, .empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: white;
+}
+
+.empty-state p {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.loader {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.alert {
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.alert-error {
+  background: rgba(244, 67, 54, 0.2);
+  border: 1px solid rgba(244, 67, 54, 0.4);
+  color: white;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 1rem;
+  }
+  
+  .page-title {
+    font-size: 2rem;
+  }
+  
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .operations-table-container {
+    overflow-x: auto;
+    padding: 1rem;
+  }
+  
+  .operations-table {
+    min-width: 1000px;
+  }
+  
+  .operations-table thead th,
+  .operation-row td {
+    padding: 0.8rem 0.5rem;
+    font-size: 0.8rem;
+  }
+  
+  .operation-type {
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.3rem 0.5rem;
+  }
+  
+  .type-text {
+    font-size: 0.7rem;
+  }
+  
+  .btn-receipt {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.7rem;
+  }
+  
+  .limits-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .pagination {
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+} 

@@ -11,8 +11,22 @@ const CurrenciesPage = () => {
   const [editCurrency, setEditCurrency] = useState(null);
   const [activeTab, setActiveTab] = useState('currencies');
   const [operationLimits, setOperationLimits] = useState([
-    { id: 1, limit_name: 'daily_currency_volume', limit_value: '1000.0', description: 'Максимальный объем операций с иностранной валютой для клиента за день', updated_at: new Date().toISOString() },
-    { id: 2, limit_name: 'single_operation_amount', limit_value: '5000.0', description: 'Максимальная сумма одной операции', updated_at: new Date().toISOString() },
+    { 
+      id: 1, 
+      limit_name: 'daily_currency_volume', 
+      limit_value: '5000.0', 
+      friendly_name: 'Дневной лимит по валюте',
+      description: 'Максимальный объем операций с иностранной валютой для клиента за день', 
+      updated_at: new Date().toISOString() 
+    },
+    { 
+      id: 2, 
+      limit_name: 'single_operation_amount', 
+      limit_value: '1000.0', 
+      friendly_name: 'Лимит одной операции',
+      description: 'Максимальная сумма одной операции', 
+      updated_at: new Date().toISOString() 
+    },
   ]);
   const [editingLimit, setEditingLimit] = useState(null);
 
@@ -169,35 +183,44 @@ const CurrenciesPage = () => {
     }
   };
 
+  const averageSpread = currencies.length > 0 
+    ? (currencies.reduce((sum, curr) => {
+        const buyRate = parseFloat(curr.buy_rate);
+        const sellRate = parseFloat(curr.sell_rate);
+        return sum + ((buyRate - sellRate) / sellRate * 100);
+      }, 0) / currencies.length).toFixed(2)
+    : 0;
+
   return (
     <div className="main-content">
       <div className="container">
         <h1 className="page-title">💱 Управление валютами</h1>
-        <p className="page-subtitle">
-          Настройка курсов валют и ограничений для операций обмена
-        </p>
 
         {/* Навигационные табы */}
-        <div className="currency-tabs">
-          <button 
-            className={`tab-button ${activeTab === 'currencies' ? 'active' : ''}`}
-            onClick={() => setActiveTab('currencies')}
-          >
-            <span className="tab-icon">💰</span>
-            Валюты и курсы
-          </button>
-          <button 
-            className={`tab-button ${activeTab === 'limits' ? 'active' : ''}`}
-            onClick={() => setActiveTab('limits')}
-          >
-            <span className="tab-icon">⚙️</span>
-            Ограничения операций
-          </button>
+        <div className="currency-navigation">
+          <div className="tabs-container">
+            <button 
+              className={`nav-tab ${activeTab === 'currencies' ? 'active' : ''}`}
+              onClick={() => setActiveTab('currencies')}
+              title="Управление валютными курсами и добавление новых валют"
+            >
+              <span className="tab-icon">💰</span>
+              <span className="tab-text">Валюты и курсы</span>
+            </button>
+            <button 
+              className={`nav-tab ${activeTab === 'limits' ? 'active' : ''}`}
+              onClick={() => setActiveTab('limits')}
+              title="Настройка лимитов и ограничений для операций обмена"
+            >
+              <span className="tab-icon">⚙️</span>
+              <span className="tab-text">Ограничения операций</span>
+            </button>
+          </div>
         </div>
 
         {/* Содержимое табов */}
         {activeTab === 'currencies' && (
-          <div className="tab-content-area">
+          <div className="tab-content">
             {/* Форма добавления/редактирования валюты */}
             <div className="currency-form-section">
               <h2 className="section-title">
@@ -214,7 +237,7 @@ const CurrenciesPage = () => {
               <form onSubmit={editCurrency ? handleUpdateCurrency : handleCreateCurrency} className="currency-form">
                 <div className="form-grid">
                   <div className="form-field">
-                    <label>Код валюты</label>
+                    <label>🏷️ Код валюты</label>
                     <input 
                       value={editCurrency ? editCurrency.code : newCurrency.code} 
                       onChange={(e) => editCurrency 
@@ -229,7 +252,7 @@ const CurrenciesPage = () => {
                   </div>
                   
                   <div className="form-field">
-                    <label>Наименование</label>
+                    <label>📝 Наименование</label>
                     <input 
                       value={editCurrency ? editCurrency.name : newCurrency.name} 
                       onChange={(e) => editCurrency 
@@ -244,7 +267,7 @@ const CurrenciesPage = () => {
                   </div>
                   
                   <div className="form-field">
-                    <label>Курс покупки ₽</label>
+                    <label>📈 Курс покупки ₽</label>
                     <input 
                       type="number" 
                       step="0.00000001" 
@@ -260,7 +283,7 @@ const CurrenciesPage = () => {
                   </div>
                   
                   <div className="form-field">
-                    <label>Курс продажи ₽</label>
+                    <label>📉 Курс продажи ₽</label>
                     <input 
                       type="number" 
                       step="0.00000001" 
@@ -288,10 +311,17 @@ const CurrenciesPage = () => {
                         Обработка...
                       </>
                     ) : (
-                      <>
-                        <span>{editCurrency ? '💾' : '➕'}</span>
-                        {editCurrency ? 'Обновить валюту' : 'Добавить валюту'}
-                      </>
+                      editCurrency ? (
+                        <>
+                          <span>💾</span>
+                          Обновить валюту
+                        </>
+                      ) : (
+                        <>
+                          <span>➕</span>
+                          Добавить валюту
+                        </>
+                      )
                     )}
                   </button>
                   {editCurrency && (
@@ -300,7 +330,7 @@ const CurrenciesPage = () => {
                       onClick={() => setEditCurrency(null)}
                       className="btn-secondary"
                     >
-                      <span>❌</span>
+                      <span>✖️</span>
                       Отмена
                     </button>
                   )}
@@ -308,85 +338,14 @@ const CurrenciesPage = () => {
               </form>
             </div>
 
-            {/* Таблица валют */}
-            <div className="currencies-table-section">
-              <h2 className="section-title">📊 Список валют</h2>
+            {/* Список валют */}
+            <div className="currencies-list-section">
+              <h2 className="section-title">📋 Список валют</h2>
               
               {loading && (
                 <div className="loading-state">
                   <div className="loader"></div>
                   <p>Загрузка валют...</p>
-                </div>
-              )}
-
-              {!loading && currencies.length > 0 && (
-                <div className="table-container">
-                  <table className="modern-table">
-                    <thead>
-                      <tr>
-                        <th>Код</th>
-                        <th>Наименование</th>
-                        <th>Курс покупки</th>
-                        <th>Курс продажи</th>
-                        <th>Спред</th>
-                        <th>Обновлено</th>
-                        <th>Действия</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {currencies.map(currency => {
-                        const buyRate = parseFloat(currency.buy_rate);
-                        const sellRate = parseFloat(currency.sell_rate);
-                        const spread = ((buyRate - sellRate) / sellRate * 100).toFixed(2);
-                        
-                        return (
-                          <tr key={currency.id} className="table-row">
-                            <td>
-                              <div className="currency-code">
-                                {currency.code}
-                              </div>
-                            </td>
-                            <td>
-                              <div className="currency-name">
-                                {currency.name}
-                              </div>
-                            </td>
-                            <td>
-                              <div className="rate buy-rate">
-                                <span className="rate-value">{formatRate(currency.buy_rate)}</span>
-                                <span className="rate-currency">₽</span>
-                              </div>
-                            </td>
-                            <td>
-                              <div className="rate sell-rate">
-                                <span className="rate-value">{formatRate(currency.sell_rate)}</span>
-                                <span className="rate-currency">₽</span>
-                              </div>
-                            </td>
-                            <td>
-                              <div className="spread">
-                                {spread}%
-                              </div>
-                            </td>
-                            <td>
-                              <div className="date">
-                                {formatDate(currency.last_rate_update_at)}
-                              </div>
-                            </td>
-                            <td>
-                              <button 
-                                onClick={() => setEditCurrency({ ...currency })}
-                                className="btn-edit"
-                                title="Редактировать курсы"
-                              >
-                                ✏️
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
                 </div>
               )}
 
@@ -397,91 +356,174 @@ const CurrenciesPage = () => {
                   <p>Начните с добавления первой валюты для обмена</p>
                 </div>
               )}
+
+              {!loading && currencies.length > 0 && (
+                <div className="currencies-table-container">
+                  <table className="currencies-table">
+                    <thead>
+                      <tr>
+                        <th>💱 Валюта</th>
+                        <th>📈 Курс покупки</th>
+                        <th>📉 Курс продажи</th>
+                        <th>📊 Спред</th>
+                        <th>🕒 Обновлено</th>
+                        <th>⚙️ Действия</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currencies.map(currency => (
+                        <tr key={currency.id} className="currency-row">
+                          <td className="currency-info">
+                            <div className="currency-code">{currency.code}</div>
+                            <div className="currency-name">{currency.name}</div>
+                          </td>
+                          <td className="rate-cell">
+                            {editCurrency && editCurrency.id === currency.id ? (
+                              <input
+                                type="number"
+                                step="0.00000001"
+                                value={editCurrency.buy_rate || ''}
+                                onChange={(e) => setEditCurrency({...editCurrency, buy_rate: e.target.value})}
+                                className="rate-input"
+                              />
+                            ) : (
+                              <span className="rate-value buy-rate">
+                                {formatRate(currency.buy_rate)} ₽
+                              </span>
+                            )}
+                          </td>
+                          <td className="rate-cell">
+                            {editCurrency && editCurrency.id === currency.id ? (
+                              <input
+                                type="number"
+                                step="0.00000001"
+                                value={editCurrency.sell_rate || ''}
+                                onChange={(e) => setEditCurrency({...editCurrency, sell_rate: e.target.value})}
+                                className="rate-input"
+                              />
+                            ) : (
+                              <span className="rate-value sell-rate">
+                                {formatRate(currency.sell_rate)} ₽
+                              </span>
+                            )}
+                          </td>
+                          <td className="spread-cell">
+                            <span className="spread-badge">
+                              {((currency.sell_rate - currency.buy_rate) / currency.buy_rate * 100).toFixed(2)}%
+                            </span>
+                          </td>
+                          <td className="updated-cell">
+                            <span className="updated-time">
+                              {formatDate(currency.updated_at)}
+                            </span>
+                          </td>
+                          <td className="actions-cell">
+                            {editCurrency && editCurrency.id === currency.id ? (
+                              <div className="action-buttons">
+                                <button 
+                                  onClick={handleUpdateCurrency}
+                                  className="btn-save"
+                                  title="Сохранить"
+                                >
+                                  <span>✓</span>
+                                  Сохранить
+                                </button>
+                                <button 
+                                  onClick={() => setEditCurrency(null)}
+                                  className="btn-cancel"
+                                  title="Отменить"
+                                >
+                                  <span>✕</span>
+                                  Отмена
+                                </button>
+                              </div>
+                            ) : (
+                              <button 
+                                onClick={() => setEditCurrency({ ...currency })}
+                                className="btn-edit"
+                                title="Редактировать курсы"
+                              >
+                                <span>✏️</span>
+                                Редактировать
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         )}
 
         {activeTab === 'limits' && (
-          <div className="tab-content-area">
+          <div className="tab-content">
             <div className="limits-section">
               <h2 className="section-title">⚙️ Ограничения операций</h2>
               
-              <div className="table-container">
-                <table className="modern-table">
-                  <thead>
-                    <tr>
-                      <th>Название</th>
-                      <th>Описание</th>
-                      <th>Значение</th>
-                      <th>Обновлено</th>
-                      <th>Действия</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {operationLimits.map(limit => (
-                      <tr key={limit.id} className="table-row">
-                        <td>
-                          <div className="limit-name">
-                            {limit.limit_name}
-                          </div>
-                        </td>
-                        <td>
-                          <div className="limit-description">
-                            {limit.description}
-                          </div>
-                        </td>
-                        <td>
-                          {editingLimit && editingLimit.id === limit.id ? (
-                            <input 
-                              type="number" 
-                              step="0.0001" 
-                              value={editingLimit.limit_value}
-                              onChange={(e) => setEditingLimit({...editingLimit, limit_value: e.target.value})}
-                              className="limit-input"
-                            />
-                          ) : (
-                            <div className="limit-value">
-                              {formatRate(limit.limit_value)} ₽
-                            </div>
-                          )}
-                        </td>
-                        <td>
-                          <div className="date">
-                            {formatDate(limit.updated_at)}
-                          </div>
-                        </td>
-                        <td>
-                          {editingLimit && editingLimit.id === limit.id ? (
-                            <div className="action-buttons">
-                              <button 
-                                onClick={handleUpdateLimit}
-                                className="btn-save"
-                                title="Сохранить"
-                              >
-                                💾
-                              </button>
-                              <button 
-                                onClick={() => setEditingLimit(null)}
-                                className="btn-cancel"
-                                title="Отмена"
-                              >
-                                ❌
-                              </button>
-                            </div>
-                          ) : (
-                            <button 
-                              onClick={() => setEditingLimit({ ...limit })}
-                              className="btn-edit"
-                              title="Редактировать"
-                            >
-                              ✏️
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="limits-grid">
+                {operationLimits.map(limit => (
+                  <div key={limit.id} className="limit-card">
+                    <div className="limit-header">
+                      <div className="limit-value-display">
+                        {editingLimit && editingLimit.id === limit.id ? (
+                          <input 
+                            type="number" 
+                            step="0.0001" 
+                            value={editingLimit.limit_value}
+                            onChange={(e) => setEditingLimit({...editingLimit, limit_value: e.target.value})}
+                            className="limit-input"
+                          />
+                        ) : (
+                          <div className="limit-value">{formatRate(limit.limit_value)} ₽</div>
+                        )}
+                      </div>
+                      <div className="limit-info">
+                        <div className="limit-name">{limit.friendly_name}</div>
+                        <div className="limit-description">{limit.description}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="limit-updated">
+                      <span className="updated-label">📅 Обновлено:</span>
+                      <span className="updated-value">{formatDate(limit.updated_at)}</span>
+                    </div>
+                    
+                    <div className="limit-actions">
+                      {editingLimit && editingLimit.id === limit.id ? (
+                        <div className="action-buttons">
+                          <button 
+                            onClick={handleUpdateLimit}
+                            className="btn-save"
+                            title="Сохранить"
+                          >
+                            <span>💾</span>
+                            Сохранить
+                          </button>
+                          <button 
+                            onClick={() => setEditingLimit(null)}
+                            className="btn-cancel"
+                            title="Отмена"
+                          >
+                            <span>❌</span>
+                            Отмена
+                          </button>
+                        </div>
+                      ) : (
+                        <button 
+                          onClick={() => setEditingLimit({ ...limit })}
+                          className="btn-edit"
+                          title="Редактировать"
+                        >
+                          <span>✏️</span>
+                          Редактировать
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

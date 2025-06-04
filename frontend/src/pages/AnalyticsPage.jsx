@@ -151,9 +151,6 @@ const AnalyticsPage = () => {
     <div className="main-content">
       <div className="container">
         <h1 className="page-title">📊 Аналитика операций</h1>
-        <p className="page-subtitle">
-          Детальная статистика и анализ операций обмена валют
-        </p>
 
         {/* Фильтры */}
         <div className="analytics-filters">

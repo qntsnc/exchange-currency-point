@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import './ClientsPage.css';
 
 const ClientsPage = () => {
   const [clients, setClients] = useState([]);
@@ -63,6 +64,18 @@ const ClientsPage = () => {
     }
   };
 
+  const handleViewClient = (clientId) => {
+    // Функция просмотра клиента
+    console.log('Просмотр клиента:', clientId);
+    // Здесь можно добавить логику для открытия модального окна или перехода на страницу клиента
+  };
+
+  const handleEditClient = (clientId) => {
+    // Функция редактирования клиента
+    console.log('Редактирование клиента:', clientId);
+    // Здесь можно добавить логику для редактирования клиента
+  };
+
   const formatDate = (dateTimeStr) => {
   if (!dateTimeStr) return 'Не указано';
   
@@ -119,55 +132,181 @@ const ClientsPage = () => {
 };
 
   return (
-    <div>
-      <h2>Клиенты</h2>
-      {error && <p className="error-message">{error}</p>}
-      
-      <h3>Добавить нового клиента</h3>
-      <form onSubmit={handleSubmit}>
-        {formError && <p className="error-message">{formError}</p>}
-        <div>
-          <label htmlFor="passport_number">Номер паспорта:</label>
-          <input id="passport_number" type="text" name="passport_number" value={newClient.passport_number} onChange={handleInputChange} required />
-        </div>
-        <div>
-          <label htmlFor="full_name">ФИО:</label>
-          <input id="full_name" type="text" name="full_name" value={newClient.full_name} onChange={handleInputChange} required />
-        </div>
-        <div>
-          <label htmlFor="phone_number">Номер телефона:</label>
-          <input id="phone_number" type="text" name="phone_number" value={newClient.phone_number} onChange={handleInputChange} />
-        </div>
-        <button type="submit" disabled={loading}>{loading ? 'Добавление...' : 'Добавить клиента'}</button>
-      </form>
+    <div className="main-content">
+      <div className="container">
+        <h1 className="page-title">👥 Управление клиентами</h1>
 
-      <h3>Список клиентов</h3>
-      {loading && <p className="loading-message">Загрузка списка клиентов...</p>}
-      {!loading && clients.length === 0 && <p>Нет клиентов для отображения.</p>}
-      {!loading && clients.length > 0 && (
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>ФИО</th>
-              <th>Номер паспорта</th>
-              <th>Телефон</th>
-              <th>Дата регистрации</th>
-            </tr>
-          </thead>
-          <tbody>
-            {clients.map(client => (
-              <tr key={client.id}>
-                <td>{client.id}</td>
-                <td>{client.full_name}</td>
-                <td>{client.passport_number}</td>
-                <td>{client.phone_number?.String || 'N/A'}</td>
-                <td>{formatDate(client.created_at)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+        {/* Общие ошибки */}
+        {error && (
+          <div className="alert alert-error">
+            <span className="alert-icon">⚠️</span>
+            {error}
+          </div>
+        )}
+
+        {/* Форма добавления клиента */}
+        <div className="client-form-section">
+          <h2 className="section-title">➕ Добавить нового клиента</h2>
+          
+          <form onSubmit={handleSubmit} className="client-form">
+            {formError && (
+              <div className="alert alert-error">
+                <span className="alert-icon">⚠️</span>
+                {formError}
+              </div>
+            )}
+
+            <div className="form-grid">
+              <div className="form-field">
+                <label htmlFor="passport_number">📄 Номер паспорта</label>
+                <input 
+                  id="passport_number" 
+                  type="text" 
+                  name="passport_number" 
+                  value={newClient.passport_number} 
+                  onChange={handleInputChange}
+                  placeholder="1234 567890"
+                  required 
+                  className="form-input"
+                />
+              </div>
+              
+              <div className="form-field">
+                <label htmlFor="full_name">👤 ФИО</label>
+                <input 
+                  id="full_name" 
+                  type="text" 
+                  name="full_name" 
+                  value={newClient.full_name} 
+                  onChange={handleInputChange}
+                  placeholder="Иванов Иван Иванович"
+                  required 
+                  className="form-input"
+                />
+              </div>
+              
+              <div className="form-field">
+                <label htmlFor="phone_number">📱 Номер телефона</label>
+                <input 
+                  id="phone_number" 
+                  type="text" 
+                  name="phone_number" 
+                  value={newClient.phone_number} 
+                  onChange={handleInputChange}
+                  placeholder="+7 (999) 123-45-67"
+                  className="form-input"
+                />
+              </div>
+            </div>
+
+            <div className="form-actions">
+              <button 
+                type="submit" 
+                disabled={loading}
+                className="btn-primary"
+              >
+                {loading ? (
+                  <>
+                    <div className="loader"></div>
+                    Добавление...
+                  </>
+                ) : (
+                  <>
+                    <span>➕</span>
+                    Добавить клиента
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Список клиентов */}
+        <div className="clients-list-section">
+          <h2 className="section-title">📋 Список клиентов</h2>
+          
+          {loading && (
+            <div className="loading-state">
+              <div className="loader"></div>
+              <p>Загрузка списка клиентов...</p>
+            </div>
+          )}
+
+          {!loading && clients.length === 0 && (
+            <div className="empty-state">
+              <div className="empty-icon">👥</div>
+              <h3>Нет клиентов</h3>
+              <p>Начните с добавления первого клиента в систему</p>
+            </div>
+          )}
+
+          {!loading && clients.length > 0 && (
+            <div className="clients-table-container">
+              <table className="clients-table">
+                <thead>
+                  <tr>
+                    <th>🔢 ID</th>
+                    <th>👤 Клиент</th>
+                    <th>📄 Паспорт</th>
+                    <th>📱 Телефон</th>
+                    <th>📅 Дата регистрации</th>
+                    <th>⚙️ Действия</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {clients.map(client => (
+                    <tr key={client.id} className="client-row">
+                      <td className="id-cell">
+                        <span className="client-id-badge">
+                          {client.id}
+                        </span>
+                      </td>
+                      <td className="client-info">
+                        <div className="client-name">{client.full_name}</div>
+                      </td>
+                      <td className="passport-cell">
+                        <span className="passport-number">
+                          {client.passport_number || 'Не указан'}
+                        </span>
+                      </td>
+                      <td className="phone-cell">
+                        <span className="phone-number">
+                          {client.phone_number?.String || client.phone_number || 'Не указан'}
+                        </span>
+                      </td>
+                      <td className="date-cell">
+                        <span className="registration-date">
+                          {formatDate(client.created_at)}
+                        </span>
+                      </td>
+                      <td className="actions-cell">
+                        <div className="action-buttons">
+                          <button 
+                            onClick={() => handleViewClient(client.id)}
+                            className="btn-view"
+                            title="Просмотр профиля"
+                          >
+                            <span>👁️</span>
+                            Просмотр
+                          </button>
+                          <button 
+                            onClick={() => handleEditClient(client.id)}
+                            className="btn-edit"
+                            title="Редактировать"
+                          >
+                            <span>✏️</span>
+                            Редактировать
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import './OperationsPage.css';
 
 const OperationsPage = () => {
   const [operations, setOperations] = useState([]);
@@ -24,16 +25,16 @@ const OperationsPage = () => {
       try {
         const parsed = JSON.parse(saved);
         return {
-          daily_currency_volume: parsed.find(l => l.limit_name === 'daily_currency_volume')?.limit_value || '1000.0',
-          single_operation_amount: parsed.find(l => l.limit_name === 'single_operation_amount')?.limit_value || '5000.0',
+          daily_currency_volume: parsed.find(l => l.limit_name === 'daily_currency_volume')?.limit_value || '5000.0',
+          single_operation_amount: parsed.find(l => l.limit_name === 'single_operation_amount')?.limit_value || '1000.0',
         };
       } catch (e) {
         console.error('Error parsing operationLimits from localStorage:', e);
       }
     }
     return {
-      daily_currency_volume: '1000.0',
-      single_operation_amount: '5000.0',
+      daily_currency_volume: '5000.0',
+      single_operation_amount: '1000.0',
     };
   });
 
@@ -236,182 +237,297 @@ const OperationsPage = () => {
     }
   };
 
+  const handleViewOperation = (operationId) => {
+    // Функция просмотра операции
+    console.log('Просмотр операции:', operationId);
+    // Здесь можно добавить логику для открытия модального окна с деталями операции
+  };
+
+  const handleCancelOperation = async (operationId) => {
+    // Функция отмены операции
+    try {
+      console.log('Отмена операции:', operationId);
+      const response = await fetch(`http://localhost:8080/api/v1/operations/${operationId}/cancel`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.message || `Failed to cancel operation (${response.status})`);
+      }
+      // Обновляем список операций после отмены
+      fetchOperations(currentPage);
+    } catch (err) {
+      setError('Ошибка отмены операции: ' + err.message);
+      console.error('Cancel operation error:', err);
+    }
+  };
+
+  const sellOperations = operations.filter(op => op.operation_type === 'CLIENT_SELLS_TO_EXCHANGE');
+  const buyOperations = operations.filter(op => op.operation_type === 'CLIENT_BUYS_FROM_EXCHANGE');
+  const totalVolume = operations.reduce((sum, op) => sum + parseFloat(op.amount_rub || 0), 0);
+
   return (
-    <div>
-      <h2>Операции Обмена</h2>
-      {error && <p className="error-message" style={{ color: 'red' }}>{error}</p>}
+    <div className="main-content">
+      <div className="container">
+        <h1 className="page-title">💸 Операции обмена</h1>
 
-      <h3>Новая операция</h3>
-      <form onSubmit={handleSubmit}>
-        {formError && <p className="error-message" style={{ color: 'red' }}>{formError}</p>}
-        <div style={{ marginBottom: '10px' }}>
-          <label htmlFor="client_id">Клиент:</label>
-          <select
-            id="client_id"
-            name="client_id"
-            value={newOperation.client_id}
-            onChange={handleInputChange}
-            required
-            style={{ padding: '8px', width: '200px' }}
-          >
-            <option value="">-- Выберите клиента --</option>
-            {clients.map(client => (
-              <option key={client.id} value={client.id}>
-                {client.full_name} (ID: {client.id})
-              </option>
-            ))}
-          </select>
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label htmlFor="operation_type">Тип операции:</label>
-          <select
-            id="operation_type"
-            name="operation_type"
-            value={newOperation.operation_type}
-            onChange={handleInputChange}
-            style={{ padding: '8px', width: '200px' }}
-          >
-            <option value="CLIENT_SELLS_TO_EXCHANGE">Клиент продаёт валюту (покупает рубли)</option>
-            <option value="CLIENT_BUYS_FROM_EXCHANGE">Клиент покупает валюту (продаёт рубли)</option>
-          </select>
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label htmlFor="currency_id">Валюта:</label>
-          <select
-            id="currency_id"
-            name="currency_id"
-            value={newOperation.currency_id}
-            onChange={handleInputChange}
-            required
-            style={{ padding: '8px', width: '200px' }}
-          >
-            <option value="">-- Выберите валюту --</option>
-            {currencies.map(curr => (
-              <option key={curr.id} value={curr.id}>
-                {curr.code} ({curr.name})
-              </option>
-            ))}
-          </select>
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label htmlFor="amount">
-            {newOperation.operation_type === 'CLIENT_SELLS_TO_EXCHANGE'
-              ? 'Сумма валюты (продажа):'
-              : 'Сумма рублей (покупка):'}
-          </label>
-          <input
-            id="amount"
-            type="number"
-            step="0.01"
-            name="amount"
-            value={newOperation.amount}
-            onChange={handleInputChange}
-            required
-            style={{ padding: '8px', width: '200px' }}
-          />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <p>Лимит одной операции: {formatDecimal(operationLimits.single_operation_amount)}</p>
-          <p>Дневной лимит по валюте: {formatDecimal(operationLimits.daily_currency_volume)}</p>
-        </div>
-        <button
-          type="submit"
-          disabled={formLoading}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: formLoading ? '#ccc' : '#4CAF50',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: formLoading ? 'not-allowed' : 'pointer',
-          }}
-        >
-          {formLoading ? 'Обработка...' : 'Создать операцию'}
-        </button>
-      </form>
+        {/* Общие ошибки */}
+        {error && (
+          <div className="alert alert-error">
+            <span className="alert-icon">⚠️</span>
+            {error}
+          </div>
+        )}
 
-      <h3>История операций</h3>
-      {loading && <p className="loading-message">Загрузка операций...</p>}
-      {!loading && operations.length === 0 && <p>Нет операций для отображения.</p>}
-      {!loading && operations.length > 0 && (
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
-          <thead>
-            <tr style={{ backgroundColor: '#f0f0f0' }}>
-              <th style={{ border: '1px solid #ddd', padding: '8px' }}>ID</th>
-              <th style={{ border: '1px solid #ddd', padding: '8px' }}>Клиент</th>
-              <th style={{ border: '1px solid #ddd', padding: '8px' }}>Тип</th>
-              <th style={{ border: '1px solid #ddd', padding: '8px' }}>Валюта</th>
-              <th style={{ border: '1px solid #ddd', padding: '8px' }}>Рубли</th>
-              <th style={{ border: '1px solid #ddd', padding: '8px' }}>Эфф. Курс</th>
-              <th style={{ border: '1px solid #ddd', padding: '8px' }}>Время</th>
-              <th style={{ border: '1px solid #ddd', padding: '8px' }}>Чек</th>
-            </tr>
-          </thead>
-          <tbody>
-            {operations.map(op => (
-              <tr key={op.id} style={{ border: '1px solid #ddd' }}>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{op.id}</td>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{op.client_name || `ID: ${op.client_id}`}</td>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-                  {op.operation_type === 'CLIENT_SELLS_TO_EXCHANGE' ? 'Продажа валюты' : 'Покупка валюты'}
-                </td>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-                  {formatDecimal(op.amount_currency)} {op.currency_code}
-                </td>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatDecimal(op.amount_rub)} RUB</td>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatRate(op.effective_rate)}</td>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatDate(op.operation_timestamp)}</td>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-                  <a
-                    className="receipt-link"
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      openReceipt(op.receipt_reference);
-                    }}
-                    title="Нажмите для просмотра чека"
-                    style={{ color: '#2196F3', textDecoration: 'none' }}
-                  >
-                    {op.receipt_reference}
-                  </a>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-      <div style={{ marginTop: '20px' }}>
-        <button
-          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-          disabled={currentPage === 1 || loading}
-          style={{
-            padding: '8px 16px',
-            marginRight: '10px',
-            backgroundColor: currentPage === 1 || loading ? '#ccc' : '#2196F3',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: currentPage === 1 || loading ? 'not-allowed' : 'pointer',
-          }}
-        >
-          Предыдущая
-        </button>
-        <span>Страница: {currentPage}</span>
-        <button
-          onClick={() => setCurrentPage(p => p + 1)}
-          disabled={operations.length < pageSize || loading}
-          style={{
-            padding: '8px 16px',
-            marginLeft: '10px',
-            backgroundColor: operations.length < pageSize || loading ? '#ccc' : '#2196F3',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: operations.length < pageSize || loading ? 'not-allowed' : 'pointer',
-          }}
-        >
-          Следующая
-        </button>
+        {/* Форма создания операции */}
+        <div className="operation-form-section">
+          <h2 className="section-title">➕ Новая операция</h2>
+          
+          <form onSubmit={handleSubmit} className="operation-form">
+            {formError && (
+              <div className="alert alert-error">
+                <span className="alert-icon">⚠️</span>
+                {formError}
+              </div>
+            )}
+
+            <div className="form-grid">
+              <div className="form-field">
+                <label htmlFor="client_id">👤 Клиент</label>
+                <select
+                  id="client_id"
+                  name="client_id"
+                  value={newOperation.client_id}
+                  onChange={handleInputChange}
+                  required
+                  className="form-select"
+                >
+                  <option value="">-- Выберите клиента --</option>
+                  {clients.map(client => (
+                    <option key={client.id} value={client.id}>
+                      {client.full_name} (ID: {client.id})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="operation_type">🔄 Тип операции</label>
+                <select
+                  id="operation_type"
+                  name="operation_type"
+                  value={newOperation.operation_type}
+                  onChange={handleInputChange}
+                  className="form-select"
+                >
+                  <option value="CLIENT_SELLS_TO_EXCHANGE">Клиент продаёт валюту (покупает рубли)</option>
+                  <option value="CLIENT_BUYS_FROM_EXCHANGE">Клиент покупает валюту (продаёт рубли)</option>
+                </select>
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="currency_id">💱 Валюта</label>
+                <select
+                  id="currency_id"
+                  name="currency_id"
+                  value={newOperation.currency_id}
+                  onChange={handleInputChange}
+                  required
+                  className="form-select"
+                >
+                  <option value="">-- Выберите валюту --</option>
+                  {currencies.map(curr => (
+                    <option key={curr.id} value={curr.id}>
+                      {curr.code} ({curr.name})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="amount">
+                  💰 {newOperation.operation_type === 'CLIENT_SELLS_TO_EXCHANGE'
+                    ? 'Сумма валюты (продажа)'
+                    : 'Сумма рублей (покупка)'}
+                </label>
+                <input
+                  id="amount"
+                  type="number"
+                  step="0.01"
+                  name="amount"
+                  value={newOperation.amount}
+                  onChange={handleInputChange}
+                  required
+                  className="form-input"
+                  placeholder="Введите сумму..."
+                />
+              </div>
+            </div>
+
+            <div className="limits-info">
+              <h3 className="limits-title">📊 Ограничения операций</h3>
+              <div className="limits-grid">
+                <div className="limit-item">
+                  <div className="limit-icon">📈</div>
+                  <div className="limit-content">
+                    <div className="limit-label">Лимит одной операции</div>
+                    <div className="limit-value">{formatDecimal(operationLimits.single_operation_amount)} ₽</div>
+                  </div>
+                </div>
+                <div className="limit-item">
+                  <div className="limit-icon">📊</div>
+                  <div className="limit-content">
+                    <div className="limit-label">Дневной лимит по валюте</div>
+                    <div className="limit-value">{formatDecimal(operationLimits.daily_currency_volume)} ₽</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="form-actions">
+              <button
+                type="submit"
+                disabled={formLoading}
+                className="btn-primary"
+              >
+                {formLoading ? (
+                  <>
+                    <div className="loader"></div>
+                    Обработка...
+                  </>
+                ) : (
+                  <>
+                    <span>💸</span>
+                    Создать операцию
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* История операций */}
+        <div className="operations-list-section">
+          <h2 className="section-title">📋 История операций</h2>
+          
+          {loading && (
+            <div className="loading-state">
+              <div className="loader"></div>
+              <p>Загрузка операций...</p>
+            </div>
+          )}
+
+          {!loading && operations.length === 0 && (
+            <div className="empty-state">
+              <div className="empty-icon">💸</div>
+              <h3>Нет операций</h3>
+              <p>Начните с создания первой операции обмена валют</p>
+            </div>
+          )}
+
+          {!loading && operations.length > 0 && (
+            <div className="operations-table-container">
+              <table className="operations-table">
+                <thead>
+                  <tr>
+                    <th>🔢 ID</th>
+                    <th>🔄 Тип операции</th>
+                    <th>👤 Клиент</th>
+                    <th>💱 Валюта</th>
+                    <th>💰 Сумма валюты</th>
+                    <th>💰 Сумма рублей</th>
+                    <th>📈 Курс</th>
+                    <th>📅 Дата</th>
+                    <th>⚙️ Действия</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {operations.map(op => (
+                    <tr key={op.id} className="operation-row">
+                      <td className="id-cell">
+                        <span className="operation-id">#{op.id}</span>
+                      </td>
+                      <td className="type-cell">
+                        <span className={`operation-type ${op.operation_type === 'CLIENT_SELLS_TO_EXCHANGE' ? 'sell' : 'buy'}`}>
+                          <span className="type-icon">
+                            {op.operation_type === 'CLIENT_SELLS_TO_EXCHANGE' ? '📤' : '📥'}
+                          </span>
+                          <span className="type-text">
+                            {op.operation_type === 'CLIENT_SELLS_TO_EXCHANGE' ? 'Продажа' : 'Покупка'}
+                          </span>
+                        </span>
+                      </td>
+                      <td className="client-cell">
+                        <span className="client-name">
+                          {op.client_name || op.client_full_name || `ID: ${op.client_id}`}
+                        </span>
+                      </td>
+                      <td className="currency-cell">
+                        <span className="currency-badge">
+                          {op.currency_code}
+                        </span>
+                      </td>
+                      <td className="amount-cell">
+                        <span className="currency-amount">
+                          {formatDecimal(op.amount_currency)}
+                        </span>
+                      </td>
+                      <td className="rub-amount-cell">
+                        <span className="rub-amount">
+                          {formatDecimal(op.amount_rub)} ₽
+                        </span>
+                      </td>
+                      <td className="rate-cell">
+                        <span className="effective-rate">
+                          {formatRate(op.effective_rate)}
+                        </span>
+                      </td>
+                      <td className="date-cell">
+                        <span className="operation-date">
+                          {formatDate(op.operation_timestamp)}
+                        </span>
+                      </td>
+                      <td className="actions-cell">
+                        <button
+                          onClick={() => openReceipt(op.receipt_reference)}
+                          className="btn-receipt"
+                          title="Просмотр чека"
+                        >
+                          <span>👁️</span>
+                          Чек
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Пагинация */}
+          {!loading && operations.length > 0 && (
+            <div className="pagination-section">
+              <div className="pagination">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1 || loading}
+                  className="pagination-btn"
+                >
+                  ← Предыдущая
+                </button>
+                <span className="page-info">Страница {currentPage}</span>
+                <button
+                  onClick={() => setCurrentPage(p => p + 1)}
+                  disabled={operations.length < pageSize || loading}
+                  className="pagination-btn"
+                >
+                  Следующая →
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
